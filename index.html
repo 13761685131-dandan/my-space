@@ -250,20 +250,20 @@
            <div class="ts-chip" data-tmpl="collage" onclick="switchTemplate('collage',this)"><span>▥</span> 月度</div>
          </div>
 
-        <!-- 比例 -->
-        <div class="ratio-strip">
-          <button class="ratio-chip active" data-ratio="3:4" onclick="switchRatio('3:4',this)">3:4</button>
-          <button class="ratio-chip" data-ratio="9:16" onclick="switchRatio('9:16',this)">9:16</button>
-          <button class="ratio-chip" data-ratio="1:1" onclick="switchRatio('1:1',this)">1:1</button>
-        </div>
-
-        <!-- 底色 -->
-        <div class="ratio-strip" style="margin-bottom:12px;">
-          <button class="bg-chip active" data-bg="warm" onclick="switchBg('warm',this)" style="background:#FBFBF8;"></button>
-          <button class="bg-chip" data-bg="cream" onclick="switchBg('cream',this)" style="background:#F9F5EC;"></button>
-          <button class="bg-chip" data-bg="mint" onclick="switchBg('mint',this)" style="background:#EEF5F0;"></button>
-          <button class="bg-chip" data-bg="charcoal" onclick="switchBg('charcoal',this)" style="background:#2D3335;"></button>
-        </div>
+       <!-- 比例+底色（今天模式隐藏） -->
+       <div id="shareSizeOptions">
+         <div class="ratio-strip">
+           <button class="ratio-chip active" data-ratio="3:4" onclick="switchRatio('3:4',this)">3:4</button>
+           <button class="ratio-chip" data-ratio="9:16" onclick="switchRatio('9:16',this)">9:16</button>
+           <button class="ratio-chip" data-ratio="1:1" onclick="switchRatio('1:1',this)">1:1</button>
+         </div>
+         <div class="ratio-strip" style="margin-bottom:12px;">
+           <button class="bg-chip active" data-bg="warm" onclick="switchBg('warm',this)" style="background:#FBFBF8;"></button>
+           <button class="bg-chip" data-bg="cream" onclick="switchBg('cream',this)" style="background:#F9F5EC;"></button>
+           <button class="bg-chip" data-bg="mint" onclick="switchBg('mint',this)" style="background:#EEF5F0;"></button>
+           <button class="bg-chip" data-bg="charcoal" onclick="switchBg('charcoal',this)" style="background:#2D3335;"></button>
+         </div>
+       </div>
 
         <!-- 微调记录（折叠） -->
         <div class="share-tweak">

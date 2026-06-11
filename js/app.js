@@ -249,6 +249,9 @@ function switchShareMode(mode, btn) {
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('shareDateRow').style.display = (mode === 'date') ? 'block' : 'none';
+  // 今天模式：隐藏比例+底色（自由高度）
+  const szEl = document.getElementById('shareSizeOptions');
+  if (szEl) szEl.style.display = (mode === 'date') ? 'none' : 'block';
   selectedIndices = new Set();
   renderLivePreview();
   if (document.getElementById('tweakBody').style.display !== 'none') renderTweak();
@@ -550,7 +553,7 @@ function drawGridV3(canvas, items) {
   ctx.fillText('my space · grow a little every day', W/2, H-30);
 }
 
-// ===== 日签 v5 · 纵向流：情绪→照片拼图→文字，无倾斜无重叠 =====
+// ===== 日签 v6 · 全宽纵列：照片满宽、自由高度、无限延伸 =====
 function drawScrapbookV3(canvas, items) {
   const W=canvas.width, ctx=canvas.getContext('2d');
   const M=44; // margin
@@ -564,29 +567,27 @@ function drawScrapbookV3(canvas, items) {
   const textItems=items.filter(r=>!r.photo&&!r.mood);
 
   // ── 预计算高度 ──
-  let curY=M+30; // start after header
-
-  // title: 2 lines ~ 80px
-  curY+=80;
-  // mood: 1-2 lines ~ 50-80px
+  let curY=M+80; // title
   if (moodItem) curY+=Math.ceil(moodItem.text.length/20)*40+30;
-  // photos: grid
-  const nPics=photoItems.length;
-  let picGridH=0;
-  if (nPics>0) {
-    const cols=nPics<=2?nPics:2;
-    const gap=12, cellW=(W-M*2-gap*(cols-1))/cols, cellH=cellW;
-    const rows=Math.ceil(nPics/cols);
-    picGridH=rows*cellH+(rows-1)*gap+16;
-  }
-  curY+=picGridH+24;
-  // text items
-  textItems.forEach(t=>{curY+=Math.ceil((t.text||'').length/18)*28+16;});
-  // footer
-  curY+=60;
 
-  // 设置 canvas 高度
-  canvas.height=Math.max(curY, W*4/3); // min 3:4 ratio
+  // 照片：全宽单列，每张自然高度
+  const nPics=photoItems.length;
+  const picW=W-M*2;
+  let picHeights=[]; // store per-photo height
+  if (nPics>0) {
+    photoItems.forEach(()=>{
+      // 先用默认 3:4 估算，实际绘制时按原图比例
+      picHeights.push(Math.round(picW*0.75));
+      curY+=Math.round(picW*0.75)+14;
+    });
+  }
+  curY+=10;
+
+  // 文字
+  textItems.forEach(t=>{curY+=Math.ceil((t.text||'').length/18)*28+16;});
+  curY+=60; // footer
+
+  canvas.height=Math.max(curY+20, W*2/3);
   const H=canvas.height;
 
   // ── 绘制 ──
@@ -611,33 +612,34 @@ function drawScrapbookV3(canvas, items) {
     y+=16;
   }
 
-  // ── 照片网格（不倾斜，不重叠，圆角 12px）──
+  // ── 照片：全宽一列，每张保持原图比例 ──
   if (nPics>0) {
-    const cols=nPics<=2?nPics:2;
-    const gap=12, cellW=(W-M*2-gap*(cols-1))/cols, cellH=cellW;
     const pY=y;
+    let py=pY;
     photoItems.forEach((item,i)=>{
-      const col=i%cols, row=Math.floor(i/cols);
-      const x=M+col*(cellW+gap), py=pY+row*(cellH+gap);
-
       const img=new Image(); img.src=item.photo;
+      // 按原图宽高比计算高度（上限 1.5x 宽）
+      const ratio=img.width&&img.height?img.height/img.width:0.75;
+      const ih=Math.min(Math.round(picW*ratio), Math.round(picW*1.5));
+
       ctx.save();
-      roundRect(ctx,x,py,cellW,cellH,12); ctx.clip();
-      const s=Math.max(cellW/img.width,cellH/img.height);
-      ctx.drawImage(img,x-(img.width*s-cellW)/2,py-(img.height*s-cellH)/2,img.width*s,img.height*s);
+      roundRect(ctx,M,py,picW,ih,12); ctx.clip();
+      const s=Math.max(picW/img.width,ih/img.height);
+      ctx.drawImage(img,M-(img.width*s-picW)/2,py-(img.height*s-ih)/2,img.width*s,img.height*s);
       ctx.restore();
 
-      // 右侧模块小标签
+      // 右下角模块小标签
       const tag=getModuleTag(item.module);
       if (tag) {
         ctx.fillStyle='rgba(0,0,0,0.45)';
-        roundRect(ctx,x+cellW-42,py+cellH-22,38,18,9); ctx.fill();
-        ctx.fillStyle='#FFFFFF'; ctx.font='400 10px Lato,sans-serif'; ctx.textAlign='center';
-        ctx.fillText(tag,x+cellW-23,py+cellH-9);
+        roundRect(ctx,M+picW-46,py+ih-24,42,20,10); ctx.fill();
+        ctx.fillStyle='#FFFFFF'; ctx.font='400 11px Lato,sans-serif'; ctx.textAlign='center';
+        ctx.fillText(tag,M+picW-25,py+ih-9);
       }
+
+      py+=ih+14;
     });
-    const rows=Math.ceil(nPics/cols);
-    y=pY+rows*cellH+(rows-1)*gap+18;
+    y=py+18;
   }
 
   // ── 文字（学习/穿搭/美食/职场）──
