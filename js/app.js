@@ -294,7 +294,7 @@ function getShareItems() {
 }
 
 // 核心：实时预览
-function renderLivePreview() {
+async function renderLivePreview() {
   const items = getShareItems();
   const img = document.getElementById('sharePreviewImg');
   const empty = document.getElementById('sharePreviewEmpty');
@@ -309,7 +309,6 @@ function renderLivePreview() {
   if (empty) empty.style.display = 'none';
 
   const canvas = document.getElementById('shareCanvas'); if (!canvas) return;
-  setupCanvasSize(canvas);
 
   // Select items based on template
   let selected = items;
@@ -318,10 +317,10 @@ function renderLivePreview() {
   // mood+collage use all data via their own logic
 
   try {
-    if (shareTemplate === 'grid') drawGridV3(canvas, selected);
-    else if (shareTemplate === 'polaroid') drawScrapbookV3(canvas, selected);
-    else if (shareTemplate === 'mood') drawMoodCardV3(canvas);
-    else if (shareTemplate === 'collage') drawCollageV3(canvas, selected);
+    if (shareTemplate === 'grid') { setupCanvasSize(canvas); drawGridV3(canvas, selected); }
+    else if (shareTemplate === 'polaroid') { canvas.width=1200; await drawScrapbookV3(canvas, selected); }
+    else if (shareTemplate === 'mood') { setupCanvasSize(canvas); drawMoodCardV3(canvas); }
+    else if (shareTemplate === 'collage') { setupCanvasSize(canvas); drawCollageV3(canvas, selected); }
     img.src = canvas.toDataURL('image/jpeg', 1.0);
   } catch(e) {
     img.style.display = 'none';
@@ -384,7 +383,7 @@ function renderSelectRecords() {
   window._shareAll = all;
 }
 
-function toggleRecord(idx, el) {
+async function toggleRecord(idx, el) {
   if (selectedIndices.has(idx)) { selectedIndices.delete(idx); el.classList.remove('checked'); }
   else { selectedIndices.add(idx); el.classList.add('checked'); }
   // Re-render preview with selected items
@@ -392,12 +391,11 @@ function toggleRecord(idx, el) {
   const selected = [];
   for (let idx of selectedIndices) { if (idx<all.length) selected.push(all[idx]); }
   const canvas = document.getElementById('shareCanvas'); if (!canvas) return;
-  setupCanvasSize(canvas);
   try {
-    if (shareTemplate==='grid') drawGridV3(canvas, selected);
-    else if (shareTemplate==='polaroid') drawScrapbookV3(canvas, selected);
-    else if (shareTemplate==='mood') drawMoodCardV3(canvas);
-    else drawCollageV3(canvas, selected);
+    if (shareTemplate==='grid') { setupCanvasSize(canvas); drawGridV3(canvas, selected); }
+    else if (shareTemplate==='polaroid') { canvas.width=1200; await drawScrapbookV3(canvas, selected); }
+    else if (shareTemplate==='mood') { setupCanvasSize(canvas); drawMoodCardV3(canvas); }
+    else { setupCanvasSize(canvas); drawCollageV3(canvas, selected); }
     document.getElementById('sharePreviewImg').src = canvas.toDataURL('image/jpeg',1.0);
   } catch(e) {}
 }
@@ -553,10 +551,10 @@ function drawGridV3(canvas, items) {
   ctx.fillText('my space · grow a little every day', W/2, H-30);
 }
 
-// ===== 日签 v6 · 全宽纵列：照片满宽、自由高度、无限延伸 =====
-function drawScrapbookV3(canvas, items) {
+// ===== 日签 v7 · 全宽纵列，先加载后算高，绝不截断 =====
+async function drawScrapbookV3(canvas, items) {
   const W=canvas.width, ctx=canvas.getContext('2d');
-  const M=44; // margin
+  const M=44;
 
   if (!items.length) return;
   const d=new Date(items[0].date);
@@ -566,31 +564,37 @@ function drawScrapbookV3(canvas, items) {
   const photoItems=items.filter(r=>r.photo);
   const textItems=items.filter(r=>!r.photo&&!r.mood);
 
-  // ── 预计算高度 ──
-  let curY=M+80; // title
-  if (moodItem) curY+=Math.ceil(moodItem.text.length/20)*40+30;
-
-  // 照片：全宽单列，每张自然高度
-  const nPics=photoItems.length;
+  // ── 第一步：加载所有照片，获取真实尺寸 ──
   const picW=W-M*2;
-  let picHeights=[]; // store per-photo height
-  if (nPics>0) {
-    photoItems.forEach(()=>{
-      // 先用默认 3:4 估算，实际绘制时按原图比例
-      picHeights.push(Math.round(picW*0.75));
-      curY+=Math.round(picW*0.75)+14;
+  const photoData=[];
+  if (photoItems.length>0) {
+    const loads=photoItems.map(item=>new Promise(resolve=>{
+      const img=new Image();
+      img.onload=()=>resolve({img, item, w:img.width, h:img.height});
+      img.onerror=()=>resolve({img:null, item, w:1, h:1});
+      img.src=item.photo;
+    }));
+    const results=await Promise.all(loads);
+    // 等图片加载完，计算真实高度
+    results.forEach(r=>{
+      const ratio=r.w&&r.h?r.h/r.w:0.75;
+      const ih=Math.min(Math.round(picW*ratio), Math.round(picW*1.8));
+      photoData.push({img:r.img, item:r.item, ih});
     });
   }
-  curY+=10;
 
-  // 文字
-  textItems.forEach(t=>{curY+=Math.ceil((t.text||'').length/18)*28+16;});
-  curY+=60; // footer
+  // ── 第二步：精确算总高度 ──
+  let totalH=M+80; // title
+  if (moodItem) totalH+=Math.ceil(moodItem.text.length/20)*40+30;
+  if (photoData.length>0) { photoData.forEach(p=>{totalH+=p.ih+14;}); totalH+=18; }
+  else totalH+=10;
+  textItems.forEach(t=>{totalH+=Math.ceil((t.text||'').length/18)*28+16;});
+  totalH+=60; // footer
 
-  canvas.height=Math.max(curY+20, W*2/3);
+  canvas.height=Math.max(totalH+20, 600);
   const H=canvas.height;
 
-  // ── 绘制 ──
+  // ── 第三步：画 ──
   ctx.fillStyle=getBgColor(); ctx.fillRect(0,0,W,H);
 
   // 标题
@@ -603,7 +607,7 @@ function drawScrapbookV3(canvas, items) {
 
   let y=M+140;
 
-  // ── 情绪 ──
+  // 情绪
   if (moodItem) {
     const mi=MOOD_TYPES[moodItem.mood];
     ctx.fillStyle=getTextDark(); ctx.font='italic 300 28px PingFang SC,serif';
@@ -612,37 +616,31 @@ function drawScrapbookV3(canvas, items) {
     y+=16;
   }
 
-  // ── 照片：全宽一列，每张保持原图比例 ──
-  if (nPics>0) {
+  // 照片：全宽一列，用真实高度
+  if (photoData.length>0) {
     const pY=y;
     let py=pY;
-    photoItems.forEach((item,i)=>{
-      const img=new Image(); img.src=item.photo;
-      // 按原图宽高比计算高度（上限 1.5x 宽）
-      const ratio=img.width&&img.height?img.height/img.width:0.75;
-      const ih=Math.min(Math.round(picW*ratio), Math.round(picW*1.5));
-
+    photoData.forEach(p=>{
+      if (!p.img) { py+=picW*0.75+14; return; }
       ctx.save();
-      roundRect(ctx,M,py,picW,ih,12); ctx.clip();
-      const s=Math.max(picW/img.width,ih/img.height);
-      ctx.drawImage(img,M-(img.width*s-picW)/2,py-(img.height*s-ih)/2,img.width*s,img.height*s);
+      roundRect(ctx,M,py,picW,p.ih,12); ctx.clip();
+      const s=Math.max(picW/p.img.width,p.ih/p.img.height);
+      ctx.drawImage(p.img,M-(p.img.width*s-picW)/2,py-(p.img.height*s-p.ih)/2,p.img.width*s,p.img.height*s);
       ctx.restore();
 
-      // 右下角模块小标签
-      const tag=getModuleTag(item.module);
+      const tag=getModuleTag(p.item.module);
       if (tag) {
         ctx.fillStyle='rgba(0,0,0,0.45)';
-        roundRect(ctx,M+picW-46,py+ih-24,42,20,10); ctx.fill();
+        roundRect(ctx,M+picW-46,py+p.ih-24,42,20,10); ctx.fill();
         ctx.fillStyle='#FFFFFF'; ctx.font='400 11px Lato,sans-serif'; ctx.textAlign='center';
-        ctx.fillText(tag,M+picW-25,py+ih-9);
+        ctx.fillText(tag,M+picW-25,py+p.ih-9);
       }
-
-      py+=ih+14;
+      py+=p.ih+14;
     });
     y=py+18;
   }
 
-  // ── 文字（学习/穿搭/美食/职场）──
+  // 文字
   textItems.forEach(item=>{
     const pre=getModuleIcon(item.module);
     ctx.fillStyle=getTextMuted(); ctx.font='13px sans-serif';
@@ -653,7 +651,7 @@ function drawScrapbookV3(canvas, items) {
     y+=6;
   });
 
-  // ── 底部 ──
+  // 底部
   ctx.fillStyle=getTextLight(); ctx.font='italic 300 15px Lato,serif'; ctx.textAlign='right';
   ctx.fillText('⸻ my space',W-M,H-30);
 }
