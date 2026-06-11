@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="My Space">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#2A4F2F">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-startup-image" href="icons/icon-512.png">
+  <title>My Space</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ========== 首页 ========== -->
+    <div id="page-home" class="page active">
+
+      <section class="screen screen-hero">
+        <div class="hero-bg"><div class="bg-overlay"></div></div>
+        <div class="hero-content">
+          <p class="hero-date" id="headerDate"></p>
+          <h1 class="hero-title">Welcome to<br>My Space</h1>
+          <p class="hero-sub">每一天都在生长 <span class="hero-sub-en">&nbsp;—&nbsp;grow a little every day</span></p>
+        </div>
+        <div class="recent-cuts">
+          <div class="cuts-label">Recent Moments · 最近剪影</div>
+          <div class="cuts-scroll" id="cutsScroll"></div>
+        </div>
+      </section>
+
+      <section class="screen screen-stats" id="screenStats">
+        <div class="stats-section">
+          <h2 class="screen-heading">This Month · 本月数据</h2>
+          <div class="stats-grid" id="statsGrid"></div>
+        </div>
+        <div class="mood-section">
+          <h2 class="screen-heading">Mood Map · 心情一览</h2>
+          <div class="mood-calendar-compact" id="moodCalendarCompact"></div>
+          <div class="mood-legend" id="moodLegend"></div>
+        </div>
+      </section>
+
+      <section class="screen screen-explore" id="screenExplore">
+        <h2 class="screen-heading">Explore · 探索我的空间</h2>
+        <div class="explore-grid" id="exploreGrid"></div>
+        <p class="explore-hint">tap to dive into each chapter of your life</p>
+      </section>
+
+      <div class="bottom-spacer"></div>
+    </div>
+
+    <!-- ========== 情绪志 ========== -->
+    <div id="page-mood" class="page">
+      <header class="detail-header">
+        <button class="back-btn" onclick="navigateTo('home')">‹</button>
+        <h1 class="detail-title">情绪志 <span class="detail-title-en">Mood Journal</span></h1>
+        <div class="header-actions">
+          <button class="share-btn" onclick="openShareModal('mood')" title="Share">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <button class="add-btn" onclick="openAddModal('mood')">+</button>
+        </div>
+      </header>
+      <div class="detail-body">
+        <div class="mood-calendar" id="moodCalendar"></div>
+        <div class="records-list" id="moodRecords"></div>
+      </div>
+    </div>
+
+    <!-- ========== 学习志 ========== -->
+    <div id="page-learn" class="page">
+      <header class="detail-header">
+        <button class="back-btn" onclick="navigateTo('home')">‹</button>
+        <h1 class="detail-title">学习志 <span class="detail-title-en">Learning</span></h1>
+        <div class="header-actions">
+          <button class="share-btn" onclick="openShareModal('learn')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <button class="add-btn" onclick="openAddModal('learn')">+</button>
+        </div>
+      </header>
+      <div class="detail-body">
+        <div class="stats-summary" id="learnSummary"><span class="en-tag">learning log</span></div>
+        <div class="records-list" id="learnRecords"></div>
+      </div>
+    </div>
+
+    <!-- ========== 旅行志 ========== -->
+    <div id="page-travel" class="page">
+      <header class="detail-header">
+        <button class="back-btn" onclick="navigateTo('home')">‹</button>
+        <h1 class="detail-title">旅行志 <span class="detail-title-en">Travel</span></h1>
+        <div class="header-actions">
+          <button class="share-btn" onclick="openShareModal('travel')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <button class="add-btn" onclick="openAddModal('travel')">+</button>
+        </div>
+      </header>
+      <div class="detail-body">
+        <div class="stats-summary" id="travelSummary"><span class="en-tag">travel log</span></div>
+        <div class="records-list" id="travelRecords"></div>
+      </div>
+    </div>
+
+    <!-- ========== 穿搭志 ========== -->
+    <div id="page-outfit" class="page">
+      <header class="detail-header">
+        <button class="back-btn" onclick="navigateTo('home')">‹</button>
+        <h1 class="detail-title">穿搭志 <span class="detail-title-en">Style</span></h1>
+        <div class="header-actions">
+          <button class="share-btn" onclick="openShareModal('outfit')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <button class="add-btn" onclick="openAddModal('outfit')">+</button>
+        </div>
+      </header>
+      <div class="detail-body">
+        <div class="stats-summary" id="outfitSummary"><span class="en-tag">style log</span></div>
+        <div class="records-list" id="outfitRecords"></div>
+      </div>
+    </div>
+
+    <!-- ========== 美食志 ========== -->
+    <div id="page-food" class="page">
+      <header class="detail-header">
+        <button class="back-btn" onclick="navigateTo('home')">‹</button>
+        <h1 class="detail-title">美食志 <span class="detail-title-en">Food</span></h1>
+        <div class="header-actions">
+          <button class="share-btn" onclick="openShareModal('food')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <button class="add-btn" onclick="openAddModal('food')">+</button>
+        </div>
+      </header>
+      <div class="detail-body">
+        <div class="stats-summary" id="foodSummary"><span class="en-tag">food log</span></div>
+        <div class="records-list" id="foodRecords"></div>
+      </div>
+    </div>
+
+    <!-- ========== 职场志 ========== -->
+    <div id="page-career" class="page">
+      <header class="detail-header">
+        <button class="back-btn" onclick="navigateTo('home')">‹</button>
+        <h1 class="detail-title">职场志 <span class="detail-title-en">Career</span></h1>
+        <div class="header-actions">
+          <button class="share-btn" onclick="openShareModal('career')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <button class="add-btn" onclick="openAddModal('career')">+</button>
+        </div>
+      </header>
+      <div class="detail-body">
+        <div class="stats-summary" id="careerSummary"><span class="en-tag">career log</span></div>
+        <div class="records-list" id="careerRecords"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== 浮动 + 按钮 ========== -->
+  <button class="fab" id="fabAdd" onclick="openModulePicker()">+</button>
+
+  <!-- ========== 模块选择器弹窗 ========== -->
+  <div class="modal-overlay" id="modulePicker">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Choose a Module</h3>
+        <button class="modal-close" onclick="closeModulePicker()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="picker-hint">选择记录类型</p>
+        <div class="picker-grid">
+          <div class="picker-item" onclick="pickModule('mood')"><span class="pi-icon">💭</span><span class="pi-name">情绪</span><span class="pi-en">Mood</span></div>
+          <div class="picker-item" onclick="pickModule('learn')"><span class="pi-icon">📚</span><span class="pi-name">学习</span><span class="pi-en">Learn</span></div>
+          <div class="picker-item" onclick="pickModule('travel')"><span class="pi-icon">✈️</span><span class="pi-name">旅行</span><span class="pi-en">Travel</span></div>
+          <div class="picker-item" onclick="pickModule('outfit')"><span class="pi-icon">👗</span><span class="pi-name">穿搭</span><span class="pi-en">Style</span></div>
+          <div class="picker-item" onclick="pickModule('food')"><span class="pi-icon">🍜</span><span class="pi-name">美食</span><span class="pi-en">Food</span></div>
+          <div class="picker-item" onclick="pickModule('career')"><span class="pi-icon">🏆</span><span class="pi-name">职场</span><span class="pi-en">Career</span></div>
+        </div>
+        <div class="picker-divider"><span>or</span></div>
+        <div class="picker-quick">
+          <p class="picker-hint">快速记录心情</p>
+          <div class="quick-moods">
+            <button onclick="quickMood('happy')">😊</button>
+            <button onclick="quickMood('calm')">😌</button>
+            <button onclick="quickMood('excited')">🤩</button>
+            <button onclick="quickMood('sad')">😢</button>
+            <button onclick="quickMood('anxious')">😰</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 添加记录弹窗 ========== -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add Note</h3>
+        <button class="modal-close" onclick="closeAddModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- ========== 分享弹窗 v2 ========== -->
+  <div class="modal-overlay" id="shareModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Share · 分享</h3>
+        <button class="modal-close" onclick="closeShareModal()">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Step 1: 选范围 -->
+        <p class="picker-hint">Step 1 · 选择范围</p>
+        <div class="share-scope">
+          <button class="scope-btn active" data-scope="month" onclick="selectScope('month',this)">本月精选</button>
+          <button class="scope-btn" data-scope="module" onclick="selectScope('module',this)">当前模块</button>
+        </div>
+
+        <!-- Step 2: 选择记录（多选） -->
+        <p class="picker-hint" style="margin-top: 16px;">Step 2 · 选择记录 <span style="font-weight:300;color:var(--t4);text-transform:none;font-style:italic;">（多选）</span></p>
+        <div class="select-records" id="selectRecords"></div>
+
+        <!-- Step 3: 选尺寸 -->
+        <p class="picker-hint" style="margin-top: 16px;">Step 3 · 选择尺寸</p>
+        <div class="ratio-picker">
+          <button class="ratio-btn active" data-ratio="3:4" onclick="selectRatio('3:4',this)"><span>3:4</span><small>朋友圈</small></button>
+          <button class="ratio-btn" data-ratio="9:16" onclick="selectRatio('9:16',this)"><span>9:16</span><small>壁纸</small></button>
+          <button class="ratio-btn" data-ratio="1:1" onclick="selectRatio('1:1',this)"><span>1:1</span><small>方格</small></button>
+        </div>
+
+        <!-- Step 4: 选模板 -->
+        <p class="picker-hint" style="margin-top: 16px;">Step 4 · 选择模板</p>
+        <div class="template-grid">
+          <div class="template-card" onclick="selectTemplate('grid')">
+            <div class="tm-preview tm-grid"></div>
+            <span class="tm-name">格子拼图</span>
+            <span class="tm-size">多图拼贴</span>
+          </div>
+          <div class="template-card" onclick="selectTemplate('film')">
+            <div class="tm-preview tm-film"></div>
+            <span class="tm-name">胶片长卷</span>
+            <span class="tm-size">电影感</span>
+          </div>
+          <div class="template-card" onclick="selectTemplate('mood')">
+            <div class="tm-preview tm-moodcard"></div>
+            <span class="tm-name">情绪卡片</span>
+            <span class="tm-size">心情分享</span>
+          </div>
+          <div class="template-card" onclick="selectTemplate('poster')">
+            <div class="tm-preview tm-poster"></div>
+            <span class="tm-name">月度画报</span>
+            <span class="tm-size">数据总结</span>
+          </div>
+        </div>
+        <button class="submit-btn" onclick="generateShare()" style="margin-top: 16px;">Generate · 生成分享图</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 分享预览弹窗 ========== -->
+  <div class="modal-overlay" id="previewModal">
+    <div class="modal-content preview-content">
+      <div class="modal-header">
+        <h3>Preview</h3>
+        <button class="modal-close" onclick="closePreviewModal()">✕</button>
+      </div>
+      <div class="modal-body preview-body">
+        <div class="preview-image-wrap">
+          <img id="previewImage" src="" alt="Share Preview" style="width:100%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.12);">
+        </div>
+        <button class="submit-btn" onclick="saveShareImage()" style="margin-top: 16px;">Save · 保存到相册</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 隐藏的 Canvas 和文件上传 -->
+  <canvas id="shareCanvas" style="display:none;"></canvas>
+  <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="handlePhotoUpload(event)">
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
