@@ -1,5 +1,5 @@
-/* My Space · Service Worker v2 */
-const CACHE = 'myspace-v2';
+/* My Space · Service Worker v3 */
+const CACHE = 'myspace-v3';
 const ASSETS = [
   './',
   './index.html',
