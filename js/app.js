@@ -550,98 +550,110 @@ function drawGridV3(canvas, items) {
   ctx.fillText('my space · grow a little every day', W/2, H-30);
 }
 
-// ===== 日签 v4 · 文字直接写底图 =====
+// ===== 日签 v5 · 纵向流：情绪→照片拼图→文字，无倾斜无重叠 =====
 function drawScrapbookV3(canvas, items) {
-  const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
-
-  // 暖白底 + 细微纹理
-  ctx.fillStyle=getBgColor(); ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='rgba(180,200,186,0.03)';
-  for (let i=0;i<60;i++) ctx.fillRect(Math.random()*W,Math.random()*H,Math.random()*3+0.5,Math.random()*3+0.5);
+  const W=canvas.width, ctx=canvas.getContext('2d');
+  const M=44; // margin
 
   if (!items.length) return;
   const d=new Date(items[0].date);
   const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const week=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
-  // ── 标题区 ──
-  ctx.fillStyle=getTextDark(); ctx.font='300 42px Lato,sans-serif';
-  ctx.fillText(mon[d.getMonth()]+' '+d.getDate(), 44, 74);
-  ctx.fillStyle=getTextMuted(); ctx.font='300 18px Lato,serif';
-  ctx.fillText(week[d.getDay()], 48, 98);
-  ctx.strokeStyle=getLineColor(); ctx.lineWidth=1.2; ctx.beginPath();
-  ctx.moveTo(48,110); ctx.lineTo(W-48,110); ctx.stroke();
-
-  // ── 情绪一句话 ──
   const moodItem=items.find(r=>r.mood);
+  const photoItems=items.filter(r=>r.photo);
+  const textItems=items.filter(r=>!r.photo&&!r.mood);
+
+  // ── 预计算高度 ──
+  let curY=M+30; // start after header
+
+  // title: 2 lines ~ 80px
+  curY+=80;
+  // mood: 1-2 lines ~ 50-80px
+  if (moodItem) curY+=Math.ceil(moodItem.text.length/20)*40+30;
+  // photos: grid
+  const nPics=photoItems.length;
+  let picGridH=0;
+  if (nPics>0) {
+    const cols=nPics<=2?nPics:2;
+    const gap=12, cellW=(W-M*2-gap*(cols-1))/cols, cellH=cellW;
+    const rows=Math.ceil(nPics/cols);
+    picGridH=rows*cellH+(rows-1)*gap+16;
+  }
+  curY+=picGridH+24;
+  // text items
+  textItems.forEach(t=>{curY+=Math.ceil((t.text||'').length/18)*28+16;});
+  // footer
+  curY+=60;
+
+  // 设置 canvas 高度
+  canvas.height=Math.max(curY, W*4/3); // min 3:4 ratio
+  const H=canvas.height;
+
+  // ── 绘制 ──
+  ctx.fillStyle=getBgColor(); ctx.fillRect(0,0,W,H);
+
+  // 标题
+  ctx.fillStyle=getTextDark(); ctx.font='300 42px Lato,sans-serif';
+  ctx.fillText(mon[d.getMonth()]+' '+d.getDate(),M,68);
+  ctx.fillStyle=getTextMuted(); ctx.font='300 18px Lato,serif';
+  ctx.fillText(week[d.getDay()],M,94);
+  ctx.strokeStyle=getLineColor(); ctx.lineWidth=1.2; ctx.beginPath();
+  ctx.moveTo(M,108); ctx.lineTo(W-M,108); ctx.stroke();
+
+  let y=M+140;
+
+  // ── 情绪 ──
   if (moodItem) {
     const mi=MOOD_TYPES[moodItem.mood];
     ctx.fillStyle=getTextDark(); ctx.font='italic 300 28px PingFang SC,serif';
-    wrapText(ctx, mi.emoji+' '+moodItem.text, 48, 150, W-96, 36);
+    const lines=wrapTextLines(ctx,mi.emoji+' '+moodItem.text,W-M*2);
+    lines.forEach(l=>{ctx.fillText(l,M,y);y+=38;});
+    y+=16;
   }
 
-  // ── 照片区（倾斜排列）──
-  const photoItems=items.filter(r=>r.photo);
-  let photoY=200;
-  if (moodItem) photoY=210+moodItem.text.length/20*36;
+  // ── 照片网格（不倾斜，不重叠，圆角 12px）──
+  if (nPics>0) {
+    const cols=nPics<=2?nPics:2;
+    const gap=12, cellW=(W-M*2-gap*(cols-1))/cols, cellH=cellW;
+    const pY=y;
+    photoItems.forEach((item,i)=>{
+      const col=i%cols, row=Math.floor(i/cols);
+      const x=M+col*(cellW+gap), py=pY+row*(cellH+gap);
 
-  if (photoItems.length>0) {
-    const angles=[-3,2.5,-1.5,4,-2,1,3.5,-4,-1];
-    const sizes=[
-      {w:W*0.55,h:W*0.4},  // 第一张大图
-      {w:W*0.35,h:W*0.35},
-      {w:W*0.4,h:W*0.3},
-      {w:W*0.38,h:W*0.38},
-    ];
-    photoItems.slice(0,4).forEach((item,i)=>{
-      const sz=sizes[Math.min(i,sizes.length-1)];
-      const a=angles[i%angles.length];
-      let cx, cy;
-      if (i===0){cx=W*0.55;cy=photoY+sz.h/2;}
-      else if (i===1){cx=W*0.25;cy=photoY+sz.h/2+20;}
-      else if (i===2){cx=W*0.6;cy=photoY+sz.h+sz.h*0.5+10;}
-      else {cx=W*0.3;cy=photoY+sz.h+sz.h*0.5+30;}
-
-      ctx.save();
-      ctx.translate(cx,cy);
-      ctx.rotate(a*Math.PI/180);
-
-      // 照片（无框，圆角16px + 微阴影）
       const img=new Image(); img.src=item.photo;
-      ctx.shadowColor='rgba(0,0,0,0.14)'; ctx.shadowBlur=18; ctx.shadowOffsetY=4;
       ctx.save();
-      roundRect(ctx,-sz.w/2,-sz.h/2,sz.w,sz.h,16); ctx.clip();
-      ctx.fillStyle='#EEEEE8'; ctx.fill(); // bg bleed
-      const s=Math.max(sz.w/img.width, sz.h/img.height);
-      ctx.drawImage(img,-sz.w/2-(img.width*s-sz.w)/2,-sz.h/2-(img.height*s-sz.h)/2,img.width*s,img.height*s);
+      roundRect(ctx,x,py,cellW,cellH,12); ctx.clip();
+      const s=Math.max(cellW/img.width,cellH/img.height);
+      ctx.drawImage(img,x-(img.width*s-cellW)/2,py-(img.height*s-cellH)/2,img.width*s,img.height*s);
       ctx.restore();
-      ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
 
-      ctx.restore();
+      // 右侧模块小标签
+      const tag=getModuleTag(item.module);
+      if (tag) {
+        ctx.fillStyle='rgba(0,0,0,0.45)';
+        roundRect(ctx,x+cellW-42,py+cellH-22,38,18,9); ctx.fill();
+        ctx.fillStyle='#FFFFFF'; ctx.font='400 10px Lato,sans-serif'; ctx.textAlign='center';
+        ctx.fillText(tag,x+cellW-23,py+cellH-9);
+      }
     });
-
-    photoY+=(photoItems.length>2?sizes[0].h*1.8:sizes[0].h+40);
+    const rows=Math.ceil(nPics/cols);
+    y=pY+rows*cellH+(rows-1)*gap+18;
   }
 
-  // ── 文字流 ──
-  const textItems=items.filter(r=>!r.photo&&!r.mood);
-  let textY=photoY+40;
-  if (!photoItems.length) textY=(moodItem?photoY+20:150);
-
-  textItems.forEach((item,i)=>{
-    const prefix=getModuleIcon(item.module);
-    ctx.fillStyle=getTextMuted(); ctx.font='14px sans-serif';
-    ctx.fillText(prefix, 48, textY+16);
-
+  // ── 文字（学习/穿搭/美食/职场）──
+  textItems.forEach(item=>{
+    const pre=getModuleIcon(item.module);
+    ctx.fillStyle=getTextMuted(); ctx.font='13px sans-serif';
+    ctx.fillText(pre,M,y+16);
     ctx.fillStyle=getTextDark(); ctx.font='300 17px PingFang SC,sans-serif';
-    const txt=''+item.text;
-    wrapText(ctx, txt, 72, textY+18, W-120, 24);
-    textY+=Math.max(30, txt.length/16*24)+10;
+    const lines=wrapTextLines(ctx,item.text||'',W-M*2-28);
+    lines.forEach(l=>{ctx.fillText(l,M+28,y+17);y+=28;});
+    y+=6;
   });
 
   // ── 底部 ──
   ctx.fillStyle=getTextLight(); ctx.font='italic 300 15px Lato,serif'; ctx.textAlign='right';
-  ctx.fillText('⸻ my space', W-48, H-30);
+  ctx.fillText('⸻ my space',W-M,H-30);
 }
 
 // ===== 月度回忆 v4 · 有机排版 =====
@@ -821,6 +833,13 @@ function wrapText(ctx,text,x,y,maxW,lineH){
   const words=text.split(''); let line=''; const lines=[];
   for(let i=0;i<words.length;i++){const test=line+words[i]; if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=words[i];}else line=test;}
   lines.push(line); lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lineH));
+}
+
+// return lines array (for manual positioning)
+function wrapTextLines(ctx,text,maxW){
+  const words=text.split(''); let line=''; const lines=[];
+  for(let i=0;i<words.length;i++){const test=line+words[i]; if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=words[i];}else line=test;}
+  lines.push(line); return lines;
 }
 
 function showToast(msg){
