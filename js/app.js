@@ -211,6 +211,7 @@ function saveRecord() {
 let shareMode = 'month', shareDate = '', shareTemplate = 'grid', shareRatio = '3:4';
 let shareSelectedModules = new Set();
 let selectedIndices = new Set();
+let shareBg = 'warm'; // 底色: warm | cream | mint | charcoal
 
 function openShareModal(module) {
   currentModule = module; shareMode = 'month'; shareRatio = '3:4';
@@ -318,7 +319,7 @@ function renderLivePreview() {
     else if (shareTemplate === 'polaroid') drawScrapbookV3(canvas, selected);
     else if (shareTemplate === 'mood') drawMoodCardV3(canvas);
     else if (shareTemplate === 'collage') drawCollageV3(canvas, selected);
-    img.src = canvas.toDataURL('image/jpeg', 0.9);
+    img.src = canvas.toDataURL('image/jpeg', 1.0);
   } catch(e) {
     img.style.display = 'none';
     if (empty) { empty.style.display = 'flex'; empty.textContent = '生成预览失败'; }
@@ -394,25 +395,98 @@ function toggleRecord(idx, el) {
     else if (shareTemplate==='polaroid') drawScrapbookV3(canvas, selected);
     else if (shareTemplate==='mood') drawMoodCardV3(canvas);
     else drawCollageV3(canvas, selected);
-    document.getElementById('sharePreviewImg').src = canvas.toDataURL('image/jpeg',0.9);
+    document.getElementById('sharePreviewImg').src = canvas.toDataURL('image/jpeg',1.0);
   } catch(e) {}
 }
 
 function saveShareImage() {
   const src = document.getElementById('sharePreviewImg').src;
   if (!src || src === window.location.href) { showToast('请先等待预览生成'); return; }
+
+  const canvas = document.getElementById('shareCanvas');
+  if (!canvas) return;
+
+  // 转为 Blob（安卓可靠方式）
+  canvas.toBlob(function(blob) {
+    if (!blob) { showToast('保存失败'); return; }
+    const now = new Date();
+    const fn = 'my-space-'+now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'.jpg';
+
+    // 尝试 navigator.share（现代安卓 Chrome）
+    if (navigator.share && navigator.canShare) {
+      const file = new File([blob], fn, { type: 'image/jpeg' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'My Space' }).then(() => {
+          showToast('已分享');
+        }).catch(() => {
+          fallbackDownload(blob, fn);
+        });
+        return;
+      }
+    }
+    fallbackDownload(blob, fn);
+  }, 'image/jpeg', 1.0);
+}
+
+function fallbackDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.download = 'my-space-'+shareTemplate+'-'+new Date().toISOString().slice(0,10)+'.jpg';
-  link.href = src;
-  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(function() {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 100);
   showToast('saved');
 }
 
 function getModuleIcon(m) { const m2={mood:'💭',learn:'📚',travel:'✈️',outfit:'👗',food:'🍜',career:'🏆'}; return m2[m]||'🌿'; }
 function getModuleTag(m) { const m2={mood:'mood',learn:'learn',travel:'travel',outfit:'style',food:'food',career:'career'}; return m2[m]||''; }
 
+// 底色映射
+function getBgColor() {
+  const bgMap = {
+    warm: '#FBFBF8',
+    cream: '#F9F5EC',
+    mint: '#EEF5F0',
+    charcoal: '#2D3335'
+  };
+  return bgMap[shareBg] || '#FBFBF8';
+}
+function getBgAccent() {
+  const bgMap = {
+    warm: '#EBF3EC',
+    cream: '#F0E8D8',
+    mint: '#DCEBE2',
+    charcoal: '#3A4245'
+  };
+  return bgMap[shareBg] || '#EBF3EC';
+}
+function getTextDark() {
+  return shareBg === 'charcoal' ? '#E8EBED' : '#1A2B1D';
+}
+function getTextMuted() {
+  return shareBg === 'charcoal' ? '#9AA5A8' : '#8CA590';
+}
+function getTextLight() {
+  return shareBg === 'charcoal' ? '#6B787C' : '#B8C9BA';
+}
+function getLineColor() {
+  return shareBg === 'charcoal' ? '#4A5558' : '#D4E5D6';
+}
+
+function switchBg(bg, btn) {
+  shareBg = bg;
+  document.querySelectorAll('.bg-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderLivePreview();
+}
+
 function setupCanvasSize(canvas) {
-  const base = 900;
+  const base = 1200; // 高清输出
   if (shareRatio==='3:4') { canvas.width=base; canvas.height=Math.round(base*4/3); }
   else if (shareRatio==='9:16') { canvas.width=base; canvas.height=Math.round(base*16/9); }
   else { canvas.width=base; canvas.height=base; }
@@ -421,7 +495,7 @@ function setupCanvasSize(canvas) {
 // ===== 拼图 v4 · 纯照片网格 =====
 function drawGridV3(canvas, items) {
   const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
-  ctx.fillStyle='#FBFBF8'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=getBgColor(); ctx.fillRect(0,0,W,H);
 
   const photos=items.filter(r=>r.photo);
   const n=Math.max(photos.length,1);
@@ -434,7 +508,7 @@ function drawGridV3(canvas, items) {
   const totalH=rows*cellH+(rows-1)*gap+100;
   const startY=Math.max(40,(H-totalH)/2);
 
-  ctx.fillStyle='#3D7044'; ctx.font='300 28px Lato,sans-serif'; ctx.textAlign='center';
+  ctx.fillStyle=getTextDark(); ctx.font='300 28px Lato,sans-serif'; ctx.textAlign='center';
   ctx.fillText('MY SPACE', W/2, startY-12);
 
   // render photos in grid
@@ -459,7 +533,7 @@ function drawGridV3(canvas, items) {
     // date label
     ctx.fillStyle='rgba(255,255,255,0.85)';
     ctx.fillRect(x+cellW-48, y+cellH-22, 44, 18);
-    ctx.fillStyle='#8CA590'; ctx.font='400 11px Lato,sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle=getTextMuted(); ctx.font='400 11px Lato,sans-serif'; ctx.textAlign='center';
     ctx.fillText(item.date?.slice(5)||'', x+cellW-26, y+cellH-8);
     ctx.restore();
   });
@@ -468,11 +542,11 @@ function drawGridV3(canvas, items) {
   if (textItems.length>0) {
     const ty=startY+rows*cellH+(rows-1)*gap+24;
     const allText=textItems.map(r=>r.text||'').join(' · ');
-    ctx.fillStyle='#556B58'; ctx.font='300 15px PingFang SC,sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle=getTextDark(); ctx.font='300 15px PingFang SC,sans-serif'; ctx.textAlign='center';
     wrapText(ctx, allText.slice(0,80), W/2, ty, W-80, 22);
   }
 
-  ctx.fillStyle='#B8C9BA'; ctx.font='italic 300 14px Lato,serif'; ctx.textAlign='center';
+  ctx.fillStyle=getTextLight(); ctx.font='italic 300 14px Lato,serif'; ctx.textAlign='center';
   ctx.fillText('my space · grow a little every day', W/2, H-30);
 }
 
@@ -481,7 +555,7 @@ function drawScrapbookV3(canvas, items) {
   const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
 
   // 暖白底 + 细微纹理
-  ctx.fillStyle='#FBFBF8'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=getBgColor(); ctx.fillRect(0,0,W,H);
   ctx.fillStyle='rgba(180,200,186,0.03)';
   for (let i=0;i<60;i++) ctx.fillRect(Math.random()*W,Math.random()*H,Math.random()*3+0.5,Math.random()*3+0.5);
 
@@ -491,18 +565,18 @@ function drawScrapbookV3(canvas, items) {
   const week=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
   // ── 标题区 ──
-  ctx.fillStyle='#2A4F2F'; ctx.font='300 42px Lato,sans-serif';
+  ctx.fillStyle=getTextDark(); ctx.font='300 42px Lato,sans-serif';
   ctx.fillText(mon[d.getMonth()]+' '+d.getDate(), 44, 74);
-  ctx.fillStyle='#8CA590'; ctx.font='300 18px Lato,serif';
+  ctx.fillStyle=getTextMuted(); ctx.font='300 18px Lato,serif';
   ctx.fillText(week[d.getDay()], 48, 98);
-  ctx.strokeStyle='#D4E5D6'; ctx.lineWidth=1.2; ctx.beginPath();
+  ctx.strokeStyle=getLineColor(); ctx.lineWidth=1.2; ctx.beginPath();
   ctx.moveTo(48,110); ctx.lineTo(W-48,110); ctx.stroke();
 
   // ── 情绪一句话 ──
   const moodItem=items.find(r=>r.mood);
   if (moodItem) {
     const mi=MOOD_TYPES[moodItem.mood];
-    ctx.fillStyle='#5A9460'; ctx.font='italic 300 28px PingFang SC,serif';
+    ctx.fillStyle=getTextDark(); ctx.font='italic 300 28px PingFang SC,serif';
     wrapText(ctx, mi.emoji+' '+moodItem.text, 48, 150, W-96, 36);
   }
 
@@ -556,17 +630,17 @@ function drawScrapbookV3(canvas, items) {
 
   textItems.forEach((item,i)=>{
     const prefix=getModuleIcon(item.module);
-    ctx.fillStyle='#8CA590'; ctx.font='14px sans-serif';
+    ctx.fillStyle=getTextMuted(); ctx.font='14px sans-serif';
     ctx.fillText(prefix, 48, textY+16);
 
-    ctx.fillStyle='#1A2B1D'; ctx.font='300 17px PingFang SC,sans-serif';
+    ctx.fillStyle=getTextDark(); ctx.font='300 17px PingFang SC,sans-serif';
     const txt=''+item.text;
     wrapText(ctx, txt, 72, textY+18, W-120, 24);
     textY+=Math.max(30, txt.length/16*24)+10;
   });
 
   // ── 底部 ──
-  ctx.fillStyle='#B8C9BA'; ctx.font='italic 300 15px Lato,serif'; ctx.textAlign='right';
+  ctx.fillStyle=getTextLight(); ctx.font='italic 300 15px Lato,serif'; ctx.textAlign='right';
   ctx.fillText('⸻ my space', W-48, H-30);
 }
 
@@ -575,7 +649,7 @@ function drawCollageV3(canvas, items) {
   const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
 
   // 暖白底
-  ctx.fillStyle='#FBFBF8'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=getBgColor(); ctx.fillRect(0,0,W,H);
 
   const now=new Date();
   const mon=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
@@ -596,22 +670,22 @@ function drawCollageV3(canvas, items) {
     });
     // 渐变过渡
     const g=ctx.createLinearGradient(0,picH-36,0,picH);
-    g.addColorStop(0,'rgba(251,251,248,0)');g.addColorStop(1,'#FBFBF8');
+    g.addColorStop(0,'rgba(251,251,248,0)');g.addColorStop(1,getBgColor());
     ctx.fillStyle=g;ctx.fillRect(0,picH-36,W,36);
   }
 
   const ty=picH+(picH>0?20:32);
 
   // ── 月份 ──
-  ctx.fillStyle='#2A4F2F';ctx.font='300 58px Lato,sans-serif';ctx.textAlign='left';
+  ctx.fillStyle=getTextDark();ctx.font='300 58px Lato,sans-serif';ctx.textAlign='left';
   ctx.fillText(mon[now.getMonth()],48,ty+52);
-  ctx.fillStyle='#8CA590';ctx.font='300 18px Lato,serif';
+  ctx.fillStyle=getTextMuted();ctx.font='300 18px Lato,serif';
   ctx.fillText(String(now.getFullYear()),48,ty+76);
-  ctx.fillStyle='#D4E5D6';ctx.fillRect(48,ty+86,W-96,1);
+  ctx.fillStyle=getLineColor();ctx.fillRect(48,ty+86,W-96,1);
 
   // ── 幸福感环形图 ──
   const ringCY=ty+180,ringR=44;
-  drawDonut(ctx,W/2-60,ringCY,ringR,calcHappiness(),'#3D7044');
+  drawDonut(ctx,W/2-60,ringCY,ringR,calcHappiness(),getTextDark());
 
   // ── 右侧数据文字 ──
   const sdata=[
@@ -622,16 +696,16 @@ function drawCollageV3(canvas, items) {
   ];
   sdata.forEach((n,i)=>{
     const py=ringCY-32+i*42;
-    ctx.fillStyle='#3D7044';ctx.font='300 28px Lato,sans-serif';ctx.textAlign='left';
+    ctx.fillStyle=getTextDark();ctx.font='300 28px Lato,sans-serif';ctx.textAlign='left';
     ctx.fillText(String(n.v),W/2+30,py+18);
-    ctx.fillStyle='#8CA590';ctx.font='400 12px Lato,sans-serif';
+    ctx.fillStyle=getTextMuted();ctx.font='400 12px Lato,sans-serif';
     ctx.fillText(n.l,W/2+68,py+18);
   });
 
   // ── 关键词 ──
   const kw=extractKeywords(getThisMonthAll());
   const kwY=ringCY+ringR+48;
-  ctx.fillStyle='#2A4F2F';ctx.font='300 24px PingFang SC,serif';ctx.textAlign='center';
+  ctx.fillStyle=getTextDark();ctx.font='300 24px PingFang SC,serif';ctx.textAlign='center';
   ctx.fillText(kw.slice(0,4).join(' · '),W/2,kwY);
 
   // ── 情绪河流（两排圆点）──
@@ -650,39 +724,39 @@ function drawCollageV3(canvas, items) {
     ctx.beginPath();ctx.arc(rx+col*(rR*2+rG)+rR,rY+row*(rR*2+rG)+rR,rR,0,Math.PI*2);
     ctx.fillStyle=rec?mc[rec.mood]||'#D9E7DC':'#EEF0ED';ctx.fill();
   }
-  ctx.fillStyle='#B8C9BA';ctx.font='400 12px Lato,sans-serif';ctx.textAlign='center';
+  ctx.fillStyle=getTextLight();ctx.font='400 12px Lato,sans-serif';ctx.textAlign='center';
   ctx.fillText('MOOD RIVER',W/2,rY+2*(rR*2+rG)+18);
 
   // ── 底部 ──
-  ctx.fillStyle='#B8C9BA';ctx.font='italic 300 15px Lato,serif';ctx.textAlign='right';
+  ctx.fillStyle=getTextLight();ctx.font='italic 300 15px Lato,serif';ctx.textAlign='right';
   ctx.fillText('grow a little every day · my space',W-48,H-28);
 }
 
 function drawMoodCardV3(canvas) {
   const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
   const grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'#EBF3EC'); grad.addColorStop(1,'#FBFBF8');
+  grad.addColorStop(0,getBgAccent()); grad.addColorStop(1,getBgColor());
   ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#2A4F2F'; ctx.font='300 42px Lato,sans-serif'; ctx.textAlign='center';
+  ctx.fillStyle=getTextDark(); ctx.font='300 42px Lato,sans-serif'; ctx.textAlign='center';
   ctx.fillText('MY MOOD', W/2, 70);
-  ctx.fillStyle='#8CA590'; ctx.font='italic 300 20px Lato,serif';
+  ctx.fillStyle=getTextMuted(); ctx.font='italic 300 20px Lato,serif';
   const now=new Date(); const mon=['January','February','March','April','May','June','July','August','September','October','November','December'];
   ctx.fillText(mon[now.getMonth()]+' '+now.getFullYear(), W/2, 100);
   const pct=calcHappiness();
-  drawDonut(ctx, W/2-80, 210, 55, pct, '#3D7044');
+  drawDonut(ctx, W/2-80, 210, 55, pct, getTextDark());
   const moods=getModuleData('mood');
   const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const thisMonthMoods=moods.filter(d=>d.date.startsWith(ym));
   let happy=0, calm=0, sad=0;
   thisMonthMoods.forEach(d=>{if(d.mood==='happy'||d.mood==='excited')happy++;else if(d.mood==='calm')calm++;else sad++;});
-  [{label:'😊 Happy',val:happy,color:'#5A9460'},{label:'😌 Calm',val:calm,color:'#8CA590'},{label:'😢 Low',val:sad,color:'#B8C9BA'}].forEach((ind,i)=>{
+  [{label:'😊 Happy',val:happy,color:getTextDark()},{label:'😌 Calm',val:calm,color:getTextMuted()},{label:'😢 Low',val:sad,color:getTextLight()}].forEach((ind,i)=>{
     ctx.fillStyle=ind.color; ctx.font='300 28px Lato,sans-serif'; ctx.textAlign='left';
     ctx.fillText(String(ind.val),W/2+30,180+i*40+18);
-    ctx.fillStyle='#8CA590'; ctx.font='300 16px Lato,sans-serif';
+    ctx.fillStyle=getTextMuted(); ctx.font='300 16px Lato,sans-serif';
     ctx.fillText(ind.label,W/2+70,180+i*40+18);
   });
   const lineY=300, lineH=150, lineX0=80, lineX1=W-60;
-  ctx.strokeStyle='#D4E5D6'; ctx.lineWidth=1;
+  ctx.strokeStyle=getLineColor(); ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(lineX0,lineY+lineH); ctx.lineTo(lineX1,lineY+lineH); ctx.stroke();
   const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   const stepX=(lineX1-lineX0)/Math.max(dim-1,1);
@@ -700,28 +774,28 @@ function drawMoodCardV3(canvas) {
     ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
     for(let i=1;i<pts.length;i++){const xc=(pts[i].x+pts[i-1].x)/2;ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,xc,(pts[i].y+pts[i-1].y)/2);}
     ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
-    ctx.strokeStyle='#5A9460';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();
-    pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle='#5A9460';ctx.fill();});
+    ctx.strokeStyle=getTextDark();ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();
+    pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=getTextDark();ctx.fill();});
   }
-  ctx.fillStyle='#8CA590';ctx.font='300 14px Lato,sans-serif';ctx.textAlign='center';
+  ctx.fillStyle=getTextMuted();ctx.font='300 14px Lato,sans-serif';ctx.textAlign='center';
   ctx.fillText('MOOD CURVE',W/2,lineY+lineH+30);
   const kw=extractKeywords(thisMonthMoods);
-  ctx.fillStyle='#8CA590';ctx.font='400 14px Lato,sans-serif';
+  ctx.fillStyle=getTextMuted();ctx.font='400 14px Lato,sans-serif';
   ctx.fillText('KEY WORDS',W/2,530);
-  ctx.fillStyle='#2A4F2F';ctx.font='300 20px PingFang SC,sans-serif';
+  ctx.fillStyle=getTextDark();ctx.font='300 20px PingFang SC,sans-serif';
   ctx.fillText(kw.slice(0,4).join(' · '),W/2,558);
-  ctx.fillStyle='#B8C9BA';ctx.font='italic 300 18px Lato,serif';
+  ctx.fillStyle=getTextLight();ctx.font='italic 300 18px Lato,serif';
   ctx.fillText('my space · grow a little every day',W/2,H-30);
 }
 
 function drawDonut(ctx,cx,cy,r,pct,color) {
   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle='rgba(180,200,186,0.3)';ctx.lineWidth=10;ctx.stroke();
+  ctx.strokeStyle=shareBg==='charcoal'?'rgba(255,255,255,0.12)':'rgba(180,200,186,0.3)';ctx.lineWidth=10;ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+(pct/100)*Math.PI*2);
   ctx.strokeStyle=color;ctx.lineWidth=10;ctx.lineCap='round';ctx.stroke();
   ctx.fillStyle=color;ctx.font='300 36px Lato,sans-serif';ctx.textAlign='center';
   ctx.fillText(pct+'%',cx,cy+5);
-  ctx.fillStyle='#8CA590';ctx.font='300 14px PingFang SC,sans-serif';
+  ctx.fillStyle=getTextMuted();ctx.font='300 14px PingFang SC,sans-serif';
   ctx.fillText('幸福指数',cx,cy+28);
 }
 

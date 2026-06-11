@@ -839,6 +839,17 @@ body {
 }
 .ratio-chip.active { border-color: var(--g5); background: var(--g1); color: var(--g6); font-weight: 500; }
 
+/* BG color chips */
+.bg-chip {
+  flex: 1; height: 28px;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all .18s ease;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+}
+.bg-chip.active { border-color: var(--g5); transform: scale(1.08); box-shadow: 0 0 0 2px var(--g2); }
+
 /* Tweak panel */
 .share-tweak { margin-bottom: 14px; }
 .tweak-header {
