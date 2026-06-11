@@ -23,70 +23,14 @@ const MOOD_TYPES = {
 const STORE_KEY = 'my-space-data';
 
 function seedData() {
+  // 首次使用为空，数据由用户创建
   return {
-    mood: [
-      { date:'2026-03-01', mood:'calm',    text:'周末在家看书，窗外有阳光，很安静' },
-      { date:'2026-03-02', mood:'happy',   text:'和朋友吃了火锅，聊了很多近况' },
-      { date:'2026-03-03', mood:'happy',   text:'今天工作效率很高' },
-      { date:'2026-03-04', mood:'calm',    text:'早起跑了步，空气很好' },
-      { date:'2026-03-05', mood:'anxious', text:'项目评审明天，有点紧张' },
-      { date:'2026-03-06', mood:'excited', text:'评审通过了！团队一起庆祝' },
-      { date:'2026-03-07', mood:'happy',   text:'周六去了公园，樱花开了' },
-      { date:'2026-03-08', mood:'happy',   text:'收到了一束花，很惊喜' },
-      { date:'2026-03-09', mood:'calm',    text:'在家做了一顿饭，慢慢享受' },
-      { date:'2026-03-10', mood:'sad',     text:'看了一部很感动的电影' },
-      { date:'2026-03-11', mood:'calm',    text:'读完了《百年孤独》，很震撼' },
-      { date:'2026-03-12', mood:'happy',   text:'发现了一家超棒的拉面店' },
-      { date:'2026-03-13', mood:'excited', text:'订了去厦门的机票！' },
-      { date:'2026-03-14', mood:'happy',   text:'今天穿了一件新衬衫，被夸了' },
-      { date:'2026-03-15', mood:'calm',    text:'写完了本周的读书笔记' },
-      { date:'2026-03-16', mood:'happy',   text:'和妈妈打了电话，她身体不错' },
-      { date:'2026-03-17', mood:'anxious', text:'工作上的事情有点多' },
-      { date:'2026-03-18', mood:'calm',    text:'整理了房间，断舍离了一些旧东西' },
-      { date:'2026-03-19', mood:'happy',   text:'尝试了一家新的咖啡馆' },
-      { date:'2026-03-20', mood:'excited', text:'春分！今天白昼比黑夜长了' },
-      { date:'2026-03-21', mood:'calm',    text:'下班后散步，看到了很美的晚霞' },
-      { date:'2026-03-22', mood:'happy',   text:'学了一个新的吉他和弦' },
-      { date:'2026-03-23', mood:'sad',     text:'有点想家' },
-      { date:'2026-03-24', mood:'happy',   text:'收到了朋友的明信片' },
-      { date:'2026-03-25', mood:'calm',    text:'今天什么都没做，就是休息' },
-      { date:'2026-03-26', mood:'excited', text:'厦门旅行明天出发！' },
-      { date:'2026-03-27', mood:'happy',   text:'到了厦门，海风好舒服' },
-      { date:'2026-03-28', mood:'excited', text:'鼓浪屿太美了' },
-      { date:'2026-03-29', mood:'happy',   text:'吃到了超新鲜的海蛎煎' },
-      { date:'2026-03-30', mood:'calm',    text:'坐在海边发呆' },
-      { date:'2026-03-31', mood:'happy',   text:'旅行虽然累但很充实' },
-    ],
-    learn: [
-      { date:'2026-03-05', text:'开始读《百年孤独》' },
-      { date:'2026-03-11', text:'读完了《百年孤独》，结尾太震撼' },
-      { date:'2026-03-18', text:'开始学习 SwiftUI' },
-    ],
-    travel: [
-      { date:'2026-03-27', text:'厦门 · 入住海边民宿，推开窗就是大海' },
-      { date:'2026-03-28', text:'鼓浪屿：老别墅、日光岩俯瞰全岛' },
-      { date:'2026-03-29', text:'沙坡尾：逛小店，看日落' },
-    ],
-    outfit: [
-      { date:'2026-03-25', text:'米色衬衫+深绿阔腿裤+棕色乐福鞋' },
-      { date:'2026-03-19', text:'白色针织开衫+牛仔裤+帆布鞋' },
-      { date:'2026-03-14', text:'浅蓝条纹衬衫+白色直筒裤' },
-      { date:'2026-03-08', text:'碎花长裙，风一吹裙摆飘起来' },
-      { date:'2026-03-02', text:'卡其风衣+黑色高领+阔腿西裤' },
-    ],
-    food: [
-      { date:'2026-03-29', text:'厦门海蛎煎！海蛎超级新鲜' },
-      { date:'2026-03-28', text:'鼓浪屿叶氏麻糍，糯叽叽' },
-      { date:'2026-03-27', text:'沙茶面，汤底浓郁' },
-      { date:'2026-03-19', text:'新咖啡馆，拿铁拉花是一只天鹅' },
-      { date:'2026-03-12', text:'公司附近拉面店，猪骨汤熬了12小时' },
-      { date:'2026-03-09', text:'自制番茄牛腩，炖了2小时' },
-      { date:'2026-03-02', text:'火锅，毛肚鹅肠黄喉辣得过瘾' },
-    ],
-    career: [
-      { date:'2026-03-20', text:'季度项目上线，用户反馈不错' },
-      { date:'2026-03-06', text:'评审通过！等了很久的好消息' },
-    ]
+    mood: [],
+    learn: [],
+    travel: [],
+    outfit: [],
+    food: [],
+    career: []
   };
 }
 

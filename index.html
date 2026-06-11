@@ -218,83 +218,58 @@
     </div>
   </div>
 
-  <!-- ========== 分享弹窗 v3 ========== -->
+  <!-- ========== 分享弹窗 v4 · 一键预览 ========== -->
   <div class="modal-overlay" id="shareModal">
-    <div class="modal-content">
+    <div class="modal-content share-content">
       <div class="modal-header">
         <h3>Share · 分享</h3>
         <button class="modal-close" onclick="closeShareModal()">✕</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body share-body">
 
-        <!-- Step 1: 按月 or 按日 -->
-        <p class="picker-hint">Step 1 · 导出方式</p>
-        <div class="share-scope">
-          <button class="mode-btn active" data-mode="month" onclick="selectMode('month',this)">月度回忆</button>
-          <button class="mode-btn" data-mode="date" onclick="selectMode('date',this)">单日回忆</button>
+        <!-- 月度 / 单日 -->
+        <div class="share-mode-row">
+          <button class="mode-btn active" data-mode="month" onclick="switchShareMode('month',this)">本月</button>
+          <button class="mode-btn" data-mode="date" onclick="switchShareMode('date',this)">今天</button>
+        </div>
+        <div id="shareDateRow" style="display:none; margin-bottom:12px;">
+          <input type="date" id="shareDateInput" class="fg-input" onchange="onShareDateChange()">
         </div>
 
-        <!-- 月度：选模块 -->
-        <div id="shareModulePicker" style="margin-top:12px;"></div>
-
-        <!-- 单日：选日期 -->
-        <div id="shareDatePicker" style="margin-top:12px;display:none;">
-          <input type="date" id="shareDateInput" class="fg-input" onchange="onDateChange(this.value)" style="width:100%;">
+        <!-- 实时预览 -->
+        <div class="share-preview-wrap">
+          <img id="sharePreviewImg" src="" alt="Preview" style="width:100%;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+          <div id="sharePreviewEmpty" style="display:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--t4);font-size:13px;border:2px dashed var(--g2);border-radius:14px;background:var(--bg);">暂无记录可导出</div>
         </div>
 
-        <!-- Step 2: 选择记录 -->
-        <p class="picker-hint" style="margin-top: 16px;">Step 2 · 选择记录 <span style="font-weight:300;color:var(--t4);text-transform:none;font-style:italic;">（多选）</span></p>
-        <div class="select-records" id="selectRecords"></div>
+        <!-- 模板横滑 -->
+        <div class="template-strip" id="templateStrip">
+           <div class="ts-chip selected" data-tmpl="grid" onclick="switchTemplate('grid',this)"><span>▦</span> 拼图</div>
+           <div class="ts-chip" data-tmpl="polaroid" onclick="switchTemplate('polaroid',this)"><span>▣</span> 日签</div>
+           <div class="ts-chip" data-tmpl="mood" onclick="switchTemplate('mood',this)"><span>◉</span> 情绪</div>
+           <div class="ts-chip" data-tmpl="collage" onclick="switchTemplate('collage',this)"><span>▥</span> 月度</div>
+         </div>
 
-        <!-- Step 3: 选尺寸 -->
-        <p class="picker-hint" style="margin-top: 16px;">Step 3 · 选择尺寸</p>
-        <div class="ratio-picker">
-          <button class="ratio-btn active" data-ratio="3:4" onclick="selectRatio('3:4',this)"><span>3:4</span><small>朋友圈</small></button>
-          <button class="ratio-btn" data-ratio="9:16" onclick="selectRatio('9:16',this)"><span>9:16</span><small>壁纸</small></button>
-          <button class="ratio-btn" data-ratio="1:1" onclick="selectRatio('1:1',this)"><span>1:1</span><small>方格</small></button>
+        <!-- 比例 -->
+        <div class="ratio-strip">
+          <button class="ratio-chip active" data-ratio="3:4" onclick="switchRatio('3:4',this)">3:4</button>
+          <button class="ratio-chip" data-ratio="9:16" onclick="switchRatio('9:16',this)">9:16</button>
+          <button class="ratio-chip" data-ratio="1:1" onclick="switchRatio('1:1',this)">1:1</button>
         </div>
 
-        <!-- Step 4: 选模板 -->
-        <p class="picker-hint" style="margin-top: 16px;">Step 4 · 选择模板</p>
-        <div class="template-grid">
-          <div class="template-card" onclick="selectTemplate('grid')">
-            <div class="tm-preview tm-grid"></div>
-            <span class="tm-name">格子拼图</span>
-            <span class="tm-size">多图拼贴</span>
+        <!-- 微调记录（折叠） -->
+        <div class="share-tweak">
+          <div class="tweak-header" onclick="toggleTweak()">
+            <span>微调记录</span>
+            <span id="tweakArrow" style="font-size:11px;">▾</span>
           </div>
-          <div class="template-card" onclick="selectTemplate('film')">
-            <div class="tm-preview tm-film"></div>
-            <span class="tm-name">胶片长卷</span>
-            <span class="tm-size">电影感</span>
-          </div>
-          <div class="template-card" onclick="selectTemplate('mood')">
-            <div class="tm-preview tm-moodcard"></div>
-            <span class="tm-name">情绪卡片</span>
-            <span class="tm-size">心情分享</span>
-          </div>
-          <div class="template-card" onclick="selectTemplate('poster')">
-            <div class="tm-preview tm-poster"></div>
-            <span class="tm-name">月度画报</span>
-            <span class="tm-size">数据总结</span>
+          <div class="tweak-body" id="tweakBody" style="display:none;">
+            <div id="shareModulePicker" style="margin-bottom:8px;"></div>
+            <div class="select-records" id="selectRecords" style="max-height:160px;"></div>
           </div>
         </div>
-        <button class="submit-btn" onclick="generateShare()" style="margin-top: 16px;">Generate · 生成分享图</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- ========== 分享预览弹窗 ========== -->
-  <div class="modal-overlay" id="previewModal">
-    <div class="modal-content preview-content">
-      <div class="modal-header">
-        <h3>Preview</h3>
-        <button class="modal-close" onclick="closePreviewModal()">✕</button>
-      </div>
-      <div class="modal-body preview-body">
-        <div class="preview-image-wrap">
-          <img id="previewImage" src="" alt="Share Preview" style="width:100%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.12);">
-        </div>
-        <button class="submit-btn" onclick="saveShareImage()" style="margin-top: 16px;">Save · 保存到相册</button>
+        <button class="submit-btn" onclick="saveShareImage()">Save · 保存到相册</button>
       </div>
     </div>
   </div>

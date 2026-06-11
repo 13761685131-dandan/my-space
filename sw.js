@@ -1,13 +1,12 @@
-/* My Space · Service Worker */
-const CACHE = 'myspace-v1';
+/* My Space · Service Worker v2 */
+const CACHE = 'myspace-v2';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/data.js',
-  '/js/app.js',
-  '/manifest.json',
-  '/images/botanical-grand.jpg'
+  './',
+  './index.html',
+  './css/style.css',
+  './js/data.js',
+  './js/app.js',
+  './manifest.json'
 ];
 
 self.addEventListener('install', e => {
@@ -27,6 +26,10 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Skip non-GET requests and data URIs
+  if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('data:')) return;
+
   e.respondWith(
     caches.match(e.request).then(cached => {
       const fetched = fetch(e.request).then(res => {

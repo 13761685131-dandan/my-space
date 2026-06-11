@@ -3,10 +3,7 @@
    localStorage 持久化 + 按日期导出
    ================================================================= */
 let currentPage = 'home', currentPhoto = null, currentModule = 'mood';
-let shareMode = 'month';       // 'month' | 'date'
-let shareDate = '';            // YYYY-MM-DD
-let shareTemplate = 'grid', shareRatio = '3:4';
-let selectedIndices = new Set();
+// share vars declared in share section below
 
 // ===== Navigation =====
 function navigateTo(page) {
@@ -90,7 +87,7 @@ function renderMoodDetail() {
       if(rec) h+=`<div class="cal-day ${MOOD_TYPES[rec.mood].c}${d===today?' today':''}">${MOOD_TYPES[rec.mood].emoji}</div>`;
       else h+=`<div class="cal-day empty">${d}</div>`;
     }
-    h+='</div></div><div class="mood-legend" style="margin-top:8px">${Object.entries(MOOD_TYPES).map(([k,v])=>`<span><span class="mood-dot ${k}"></span>${v.label}</span>`).join('')}</div>';
+    h+='</div></div><div class="mood-legend" style="margin-top:8px">' + Object.entries(MOOD_TYPES).map(([k,v])=>'<span><span class="mood-dot '+k+'"></span>'+v.label+'</span>').join('') + '</div>';
     cal.innerHTML = h;
   }
   renderRecordList('moodRecords', 'mood');
@@ -133,8 +130,14 @@ function deleteRecord(moduleKey, idx) {
 }
 
 // ===== Module Picker =====
-function openModulePicker() { document.getElementById('modulePicker').classList.add('active'); }
-function closeModulePicker() { document.getElementById('modulePicker').classList.remove('active'); }
+function openModulePicker() {
+  const el = document.getElementById('modulePicker');
+  if (el) el.classList.add('active');
+}
+function closeModulePicker() {
+  const el = document.getElementById('modulePicker');
+  if (el) el.classList.remove('active');
+}
 function pickModule(m) { closeModulePicker(); openAddModal(m); }
 function quickMood(mood) {
   closeModulePicker();
@@ -203,173 +206,210 @@ function saveRecord() {
 }
 
 // =================================================================
-// SHARE V3 · 按日期 + 月度多模块选择
+// SHARE V4 · 一键预览 + 实时切换
 // =================================================================
+let shareMode = 'month', shareDate = '', shareTemplate = 'grid', shareRatio = '3:4';
+let shareSelectedModules = new Set();
+let selectedIndices = new Set();
+
 function openShareModal(module) {
-  currentModule = module; shareMode = 'month'; shareTemplate = 'grid'; shareRatio = '3:4'; selectedIndices = new Set();
+  currentModule = module; shareMode = 'month'; shareRatio = '3:4';
+  // Smart template pick
+  const autoMap = { mood:'mood', travel:'polaroid', food:'polaroid', outfit:'polaroid', learn:'polaroid', career:'collage' };
+   shareTemplate = autoMap[module] || 'grid';
+  selectedIndices = new Set();
+  shareSelectedModules = new Set();
+  Object.keys(MODULES).forEach(k => shareSelectedModules.add(k));
+
   document.getElementById('shareModal').classList.add('active');
   // reset UI
-  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.mode-btn[data-mode="month"]').classList.add('active');
-  document.querySelectorAll('.ratio-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.ratio-btn[data-ratio="3:4"]').classList.add('active');
-  document.querySelectorAll('.template-card').forEach(c=>c.classList.remove('selected'));
-  document.querySelector('.template-card').classList.add('selected');
-  renderShareModulePicker();
-  renderShareDatePicker();
-  renderSelectRecords();
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  const mb = document.querySelector('.mode-btn[data-mode="month"]');
+  if (mb) mb.classList.add('active');
+  document.querySelectorAll('.ts-chip').forEach(c => c.classList.remove('selected'));
+  const tc = document.querySelector(`.ts-chip[data-tmpl="${shareTemplate}"]`);
+  if (tc) tc.classList.add('selected');
+  document.querySelectorAll('.ratio-chip').forEach(c => c.classList.remove('active'));
+  const rc = document.querySelector('.ratio-chip[data-ratio="3:4"]');
+  if (rc) rc.classList.add('active');
+  // date setup
+  if (!shareDate) { const n = new Date(); shareDate = n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+  const di = document.getElementById('shareDateInput'); if (di) di.value = shareDate;
+  document.getElementById('shareDateRow').style.display = (shareMode === 'date') ? 'block' : 'none';
+  document.getElementById('tweakBody').style.display = 'none';
+  document.getElementById('tweakArrow').textContent = '▾';
+  renderLivePreview();
 }
+
 function closeShareModal() { document.getElementById('shareModal').classList.remove('active'); }
 
-function selectMode(mode, btn) {
+function switchShareMode(mode, btn) {
   shareMode = mode;
-  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  document.getElementById('shareDateRow').style.display = (mode === 'date') ? 'block' : 'none';
   selectedIndices = new Set();
-  renderShareModulePicker();
-  renderShareDatePicker();
-  renderSelectRecords();
+  renderLivePreview();
+  if (document.getElementById('tweakBody').style.display !== 'none') renderTweak();
 }
-function selectRatio(ratio, btn) {
-  shareRatio = ratio;
-  document.querySelectorAll('.ratio-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-}
-function selectTemplate(tmpl) {
+
+function switchTemplate(tmpl, btn) {
   shareTemplate = tmpl;
-  document.querySelectorAll('.template-card').forEach(c=>c.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
+  document.querySelectorAll('.ts-chip').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  renderLivePreview();
+  if (document.getElementById('tweakBody').style.display !== 'none') renderTweak();
+}
+
+function switchRatio(ratio, btn) {
+  shareRatio = ratio;
+  document.querySelectorAll('.ratio-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderLivePreview();
+}
+
+function onShareDateChange() {
+  shareDate = document.getElementById('shareDateInput').value;
+  selectedIndices = new Set();
+  renderLivePreview();
+}
+
+// 获取当前应导出的记录
+function getShareItems() {
+  if (shareMode === 'date') {
+    return getDateAll(shareDate);
+  }
+  const all = [];
+  const now = new Date();
+  const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  shareSelectedModules.forEach(k => {
+    getModuleData(k).filter(r => r.date.startsWith(ym)).forEach(r => all.push({...r, module:k}));
+  });
+  all.sort((a,b) => b.date.localeCompare(a.date));
+  return all;
+}
+
+// 核心：实时预览
+function renderLivePreview() {
+  const items = getShareItems();
+  const img = document.getElementById('sharePreviewImg');
+  const empty = document.getElementById('sharePreviewEmpty');
+  if (!img) return;
+
+  if (items.length === 0) {
+    img.style.display = 'none';
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  img.style.display = 'block';
+  if (empty) empty.style.display = 'none';
+
+  const canvas = document.getElementById('shareCanvas'); if (!canvas) return;
+  setupCanvasSize(canvas);
+
+  // Select items based on template
+  let selected = items;
+  if (shareTemplate === 'grid') selected = items.slice(0, 9);
+  else if (shareTemplate === 'polaroid') selected = items;
+  // mood+collage use all data via their own logic
+
+  try {
+    if (shareTemplate === 'grid') drawGridV3(canvas, selected);
+    else if (shareTemplate === 'polaroid') drawScrapbookV3(canvas, selected);
+    else if (shareTemplate === 'mood') drawMoodCardV3(canvas);
+    else if (shareTemplate === 'collage') drawCollageV3(canvas, selected);
+    img.src = canvas.toDataURL('image/jpeg', 0.9);
+  } catch(e) {
+    img.style.display = 'none';
+    if (empty) { empty.style.display = 'flex'; empty.textContent = '生成预览失败'; }
+  }
+
+  // store for save
+  window._shareCache = {
+    mode: shareMode, date: shareDate, template: shareTemplate, ratio: shareRatio,
+    items: selected
+  };
+}
+
+// 折叠面板
+function toggleTweak() {
+  const body = document.getElementById('tweakBody');
+  const arrow = document.getElementById('tweakArrow');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    arrow.textContent = '▴';
+    renderTweak();
+  } else {
+    body.style.display = 'none';
+    arrow.textContent = '▾';
+  }
+}
+
+function renderTweak() {
+  const el = document.getElementById('shareModulePicker');
+  if (el && shareMode === 'month') {
+    el.innerHTML = Object.keys(MODULES).map(k => {
+      const c = shareSelectedModules.has(k) ? 'checked' : '';
+      return '<div class="select-record '+c+'" onclick="toggleShareModule(\''+k+'\',this)"><div class="sr-check">✓</div><span class="sr-emoji">'+MODULES[k].icon+'</span><span class="sr-text">'+MODULES[k].name+'</span><span class="sr-module">'+getCurrentMonthCount(k)+' this month</span></div>';
+    }).join('');
+  }
   renderSelectRecords();
 }
 
-// 月度模式 → 多模块选择
-let shareSelectedModules = new Set();
-function renderShareModulePicker() {
-  const el = document.getElementById('shareModulePicker');
-  if (!el) return;
-  if (shareMode === 'date') { el.style.display='none'; return; }
-  el.style.display='block';
-  if (shareSelectedModules.size === 0) Object.keys(MODULES).forEach(k => shareSelectedModules.add(k));
-  el.innerHTML = Object.keys(MODULES).map(k => {
-    const c = shareSelectedModules.has(k) ? 'checked' : '';
-    return `<div class="select-record ${c}" onclick="toggleShareModule('${k}',this)"><div class="sr-check">✓</div><span class="sr-emoji">${MODULES[k].icon}</span><span class="sr-text">${MODULES[k].name}</span><span class="sr-module">${getCurrentMonthCount(k)} this month</span></div>`;
-  }).join('');
-}
 function toggleShareModule(k, el) {
   if (shareSelectedModules.has(k)) { shareSelectedModules.delete(k); el.classList.remove('checked'); }
   else { shareSelectedModules.add(k); el.classList.add('checked'); }
   selectedIndices = new Set();
   renderSelectRecords();
+  renderLivePreview();
 }
 
-// 日期模式 → 日期选择
-function renderShareDatePicker() {
-  const el = document.getElementById('shareDatePicker');
-  if (!el) return;
-  if (shareMode !== 'date') { el.style.display='none'; return; }
-  el.style.display='block';
-  if (!shareDate) {
-    const now = new Date();
-    shareDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  }
-  document.getElementById('shareDateInput').value = shareDate;
-}
-function onDateChange(val) {
-  shareDate = val;
-  selectedIndices = new Set();
-  renderSelectRecords();
-}
-
-// 记录选择列表
 function renderSelectRecords() {
-  const el = document.getElementById('selectRecords');
-  if (!el) return;
-  let all;
-  if (shareMode === 'date') {
-    all = getDateAll(shareDate);
-  } else {
-    all = [];
-    const now = new Date();
-    const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    shareSelectedModules.forEach(k => {
-      getModuleData(k).filter(r => r.date.startsWith(ym)).forEach(r => all.push({...r, module:k}));
-    });
-    all.sort((a,b) => b.date.localeCompare(a.date));
+  const el = document.getElementById('selectRecords'); if (!el) return;
+  const all = getShareItems();
+  if (selectedIndices.size === 0) {
+    const n = Math.min(all.length, 9);
+    for (let i=0;i<n;i++) selectedIndices.add(i);
   }
-  selectedIndices = new Set();
-  const autoN = Math.min(all.length, shareTemplate==='grid'?9:shareTemplate==='film'?8:9);
-  for (let i=0;i<autoN;i++) selectedIndices.add(i);
-
-  if (all.length === 0) { el.innerHTML = '<p style="color:var(--t4);font-size:12px;text-align:center;padding:12px;">暂无记录</p>'; return; }
-
-  el.innerHTML = all.map((item,i) => {
-    const c = selectedIndices.has(i)?'checked':'';
-    const hasPhoto = item.photo ? '📷' : getModuleIcon(item.module);
-    return `<div class="select-record ${c}" onclick="toggleRecord(${i}, this, ${all.length})" data-idx="${i}"><div class="sr-check">✓</div><span class="sr-emoji">${hasPhoto}</span><span class="sr-text">${(item.text||'').slice(0,30)}</span><span class="sr-module">${getModuleTag(item.module)}</span></div>`;
+  if (all.length===0) { el.innerHTML='<p style="color:var(--t4);font-size:12px;text-align:center;padding:12px;">暂无记录</p>'; return; }
+  el.innerHTML = all.map((item,i)=>{
+    const c=selectedIndices.has(i)?'checked':'';
+    const ph=item.photo?'📷':getModuleIcon(item.module);
+    return '<div class="select-record '+c+'" onclick="toggleRecord('+i+',this)"><div class="sr-check">✓</div><span class="sr-emoji">'+ph+'</span><span class="sr-text">'+(item.text||'').slice(0,25)+'</span><span class="sr-module">'+getModuleTag(item.module)+'</span></div>';
   }).join('');
-  // store all for later
   window._shareAll = all;
 }
 
-function toggleRecord(idx, el, total) {
+function toggleRecord(idx, el) {
   if (selectedIndices.has(idx)) { selectedIndices.delete(idx); el.classList.remove('checked'); }
   else { selectedIndices.add(idx); el.classList.add('checked'); }
+  // Re-render preview with selected items
+  const all = window._shareAll || getShareItems();
+  const selected = [];
+  for (let idx of selectedIndices) { if (idx<all.length) selected.push(all[idx]); }
+  const canvas = document.getElementById('shareCanvas'); if (!canvas) return;
+  setupCanvasSize(canvas);
+  try {
+    if (shareTemplate==='grid') drawGridV3(canvas, selected);
+    else if (shareTemplate==='polaroid') drawScrapbookV3(canvas, selected);
+    else if (shareTemplate==='mood') drawMoodCardV3(canvas);
+    else drawCollageV3(canvas, selected);
+    document.getElementById('sharePreviewImg').src = canvas.toDataURL('image/jpeg',0.9);
+  } catch(e) {}
 }
 
-function getAllShareableRecords() {
-  return window._shareAll || [];
+function saveShareImage() {
+  const src = document.getElementById('sharePreviewImg').src;
+  if (!src || src === window.location.href) { showToast('请先等待预览生成'); return; }
+  const link = document.createElement('a');
+  link.download = 'my-space-'+shareTemplate+'-'+new Date().toISOString().slice(0,10)+'.jpg';
+  link.href = src;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  showToast('saved');
 }
 
 function getModuleIcon(m) { const m2={mood:'💭',learn:'📚',travel:'✈️',outfit:'👗',food:'🍜',career:'🏆'}; return m2[m]||'🌿'; }
 function getModuleTag(m) { const m2={mood:'mood',learn:'learn',travel:'travel',outfit:'style',food:'food',career:'career'}; return m2[m]||''; }
-
-// =================================================================
-// EXPORT · 生成
-// =================================================================
-function generateShare() {
-  if (selectedIndices.size===0) { showToast('请至少选择一条记录'); return; }
-  const all = getAllShareableRecords();
-  if (!all || all.length===0) { showToast('没有可导出的记录'); return; }
-  const selected = [];
-  for (let idx of selectedIndices) { if (idx<all.length) selected.push(all[idx]); }
-  selected.sort((a,b)=>b.date.localeCompare(a.date));
-  closeShareModal();
-
-  // preload photos
-  const photos = selected.filter(s=>s.photo).map(s=>s.photo);
-  loadAllPhotos(photos).then(loadedImgs => {
-    window._shareLoaded = loadedImgs;
-    doExport(selected);
-  }).catch(() => { doExport(selected); });
-}
-
-function loadAllPhotos(srcs) {
-  return Promise.all(srcs.map(s => new Promise((resolve,reject) => {
-    const img = new Image(); img.onload=()=>resolve(img); img.onerror=reject; img.src=s;
-  })));
-}
-
-function doExport(selected) {
-  const canvas = document.getElementById('shareCanvas');
-  setupCanvasSize(canvas);
-  if (shareTemplate==='grid') drawGridV3(canvas, selected);
-  else if (shareTemplate==='film') drawFilmV3(canvas, selected);
-  else if (shareTemplate==='mood') drawMoodCardV3(canvas);
-  else if (shareTemplate==='poster') drawPosterV3(canvas);
-  const dataUrl = canvas.toDataURL('image/jpeg',0.92);
-  document.getElementById('previewImage').src = dataUrl;
-  document.getElementById('previewModal').classList.add('active');
-}
-
-function closePreviewModal() { document.getElementById('previewModal').classList.remove('active'); }
-
-function saveShareImage() {
-  const link = document.createElement('a');
-  link.download = `my-space-${shareTemplate}-${new Date().toISOString().slice(0,10)}.jpg`;
-  link.href = document.getElementById('previewImage').src;
-  document.body.appendChild(link); link.click(); document.body.removeChild(link);
-  showToast('image saved');
-}
 
 function setupCanvasSize(canvas) {
   const base = 900;
@@ -378,256 +418,324 @@ function setupCanvasSize(canvas) {
   else { canvas.width=base; canvas.height=base; }
 }
 
-// ===== TEMPLATES =====
+// ===== 拼图 v4 · 纯照片网格 =====
 function drawGridV3(canvas, items) {
   const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
   ctx.fillStyle='#FBFBF8'; ctx.fillRect(0,0,W,H);
 
-  const n=items.length;
-  let cols=n<=4?2:n<=9?3:4;
-  const rows=Math.ceil(n/cols), margin=40, gap=8;
+  const photos=items.filter(r=>r.photo);
+  const n=Math.max(photos.length,1);
+  let cols=n<=3?n:(n<=6?3:3);
+  const rows=Math.ceil(n/cols);
+  const margin=60, gap=12;
   const cellW=(W-margin*2-gap*(cols-1))/cols;
-  const cellH=(H-margin*2-gap*(rows-1)-90)/rows;
-  const startY=70;
+  const cellH=cellW;
 
-  ctx.fillStyle='#3D7044'; ctx.font='300 32px Lato,sans-serif'; ctx.textAlign='center';
-  ctx.fillText('MY SPACE', W/2, 40);
+  const totalH=rows*cellH+(rows-1)*gap+100;
+  const startY=Math.max(40,(H-totalH)/2);
 
-  items.forEach((item,i)=>{
+  ctx.fillStyle='#3D7044'; ctx.font='300 28px Lato,sans-serif'; ctx.textAlign='center';
+  ctx.fillText('MY SPACE', W/2, startY-12);
+
+  // render photos in grid
+  const photoItems=items.filter(r=>r.photo);
+  const textItems=items.filter(r=>!r.photo);
+
+  photoItems.forEach((item,i)=>{
     const col=i%cols, row=Math.floor(i/cols);
     const x=margin+col*(cellW+gap), y=startY+row*(cellH+gap);
 
-    if (item.photo) {
-      // 照片 fill
-      const img = new Image(); img.src = item.photo;
-      ctx.save(); roundRect(ctx,x,y,cellW,cellH,12); ctx.clip();
-      const scale=Math.max(cellW/img.width, cellH/img.height);
-      ctx.drawImage(img, x-(img.width*scale-cellW)/2, y-(img.height*scale-cellH)/2, img.width*scale, img.height*scale);
-      ctx.restore();
-    } else {
-      // emoji card
-      ctx.fillStyle='#FFFFFF'; ctx.strokeStyle='#D4E5D6'; ctx.lineWidth=1;
-      roundRect(ctx,x,y,cellW,cellH,12); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='#1A2B1D'; ctx.font='28px sans-serif'; ctx.textAlign='center';
-      ctx.fillText(getModuleIcon(item.module)||'🌿', x+cellW/2, y+38);
-      ctx.fillStyle='#556B58'; ctx.font='300 15px PingFang SC,sans-serif';
-      wrapText(ctx, (item.text||'').slice(0,16), x+cellW/2, y+60, cellW-16, 20);
-    }
-
-    // 底部日期
-    ctx.fillStyle='rgba(255,255,255,0.88)';
-    ctx.fillRect(x, y+cellH-26, cellW, 26);
-    ctx.fillStyle='#B8C9BA'; ctx.font='300 13px Lato,sans-serif'; ctx.textAlign='center';
-    ctx.fillText(item.date?.slice(5)||'', x+cellW/2, y+cellH-7);
+    ctx.save();
+    // white border
+    ctx.fillStyle='#FFFFFF'; ctx.shadowColor='rgba(0,0,0,0.1)'; ctx.shadowBlur=11;
+    roundRect(ctx,x-4,y-4,cellW+8,cellH+8,6); ctx.fill();
+    ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+    // photo
+    const img=new Image(); img.src=item.photo;
+    ctx.save(); roundRect(ctx,x,y,cellW,cellH,4); ctx.clip();
+    const s=Math.max(cellW/img.width,cellH/img.height);
+    ctx.drawImage(img,x-(img.width*s-cellW)/2,y-(img.height*s-cellH)/2,img.width*s,img.height*s);
+    ctx.restore();
+    // date label
+    ctx.fillStyle='rgba(255,255,255,0.85)';
+    ctx.fillRect(x+cellW-48, y+cellH-22, 44, 18);
+    ctx.fillStyle='#8CA590'; ctx.font='400 11px Lato,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(item.date?.slice(5)||'', x+cellW-26, y+cellH-8);
+    ctx.restore();
   });
+
+  // text items become a short paragraph below
+  if (textItems.length>0) {
+    const ty=startY+rows*cellH+(rows-1)*gap+24;
+    const allText=textItems.map(r=>r.text||'').join(' · ');
+    ctx.fillStyle='#556B58'; ctx.font='300 15px PingFang SC,sans-serif'; ctx.textAlign='center';
+    wrapText(ctx, allText.slice(0,80), W/2, ty, W-80, 22);
+  }
+
+  ctx.fillStyle='#B8C9BA'; ctx.font='italic 300 14px Lato,serif'; ctx.textAlign='center';
+  ctx.fillText('my space · grow a little every day', W/2, H-30);
 }
 
-function drawFilmV3(canvas, items) {
+// ===== 日签 v4 · 文字直接写底图 =====
+function drawScrapbookV3(canvas, items) {
   const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
+
+  // 暖白底 + 细微纹理
   ctx.fillStyle='#FBFBF8'; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#2A4F2F'; ctx.font='300 32px Lato,sans-serif'; ctx.textAlign='center';
-  ctx.fillText('MY SPACE', W/2, 50);
-  ctx.fillStyle='#D4E5D6'; ctx.fillRect(W/2-30,62,60,1);
+  ctx.fillStyle='rgba(180,200,186,0.03)';
+  for (let i=0;i<60;i++) ctx.fillRect(Math.random()*W,Math.random()*H,Math.random()*3+0.5,Math.random()*3+0.5);
 
-  const usableH=H-100;
-  const nShow=Math.min(items.length, 8);
-  const perH=Math.min(usableH/nShow, 120);
-  let ty=90;
+  if (!items.length) return;
+  const d=new Date(items[0].date);
+  const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const week=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-  items.slice(0,nShow).forEach(item=>{
-    const ih=perH-10;
-    ctx.fillStyle='#FFFFFF'; ctx.strokeStyle='#D4E5D6'; ctx.lineWidth=1;
-    roundRect(ctx,40,ty,W-80,ih,12); ctx.fill(); ctx.stroke();
-    // holes
-    ctx.fillStyle='#FBFBF8'; ctx.strokeStyle='#D4E5D6';
-    ctx.beginPath(); ctx.arc(56,ty+ih/2,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(W-56,ty+ih/2,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // ── 标题区 ──
+  ctx.fillStyle='#2A4F2F'; ctx.font='300 42px Lato,sans-serif';
+  ctx.fillText(mon[d.getMonth()]+' '+d.getDate(), 44, 74);
+  ctx.fillStyle='#8CA590'; ctx.font='300 18px Lato,serif';
+  ctx.fillText(week[d.getDay()], 48, 98);
+  ctx.strokeStyle='#D4E5D6'; ctx.lineWidth=1.2; ctx.beginPath();
+  ctx.moveTo(48,110); ctx.lineTo(W-48,110); ctx.stroke();
 
-    if (item.photo) {
+  // ── 情绪一句话 ──
+  const moodItem=items.find(r=>r.mood);
+  if (moodItem) {
+    const mi=MOOD_TYPES[moodItem.mood];
+    ctx.fillStyle='#5A9460'; ctx.font='italic 300 28px PingFang SC,serif';
+    wrapText(ctx, mi.emoji+' '+moodItem.text, 48, 150, W-96, 36);
+  }
+
+  // ── 照片区（倾斜排列）──
+  const photoItems=items.filter(r=>r.photo);
+  let photoY=200;
+  if (moodItem) photoY=210+moodItem.text.length/20*36;
+
+  if (photoItems.length>0) {
+    const angles=[-3,2.5,-1.5,4,-2,1,3.5,-4,-1];
+    const sizes=[
+      {w:W*0.55,h:W*0.4},  // 第一张大图
+      {w:W*0.35,h:W*0.35},
+      {w:W*0.4,h:W*0.3},
+      {w:W*0.38,h:W*0.38},
+    ];
+    photoItems.slice(0,4).forEach((item,i)=>{
+      const sz=sizes[Math.min(i,sizes.length-1)];
+      const a=angles[i%angles.length];
+      let cx, cy;
+      if (i===0){cx=W*0.55;cy=photoY+sz.h/2;}
+      else if (i===1){cx=W*0.25;cy=photoY+sz.h/2+20;}
+      else if (i===2){cx=W*0.6;cy=photoY+sz.h+sz.h*0.5+10;}
+      else {cx=W*0.3;cy=photoY+sz.h+sz.h*0.5+30;}
+
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(a*Math.PI/180);
+
+      // 照片（无框，圆角16px + 微阴影）
       const img=new Image(); img.src=item.photo;
-      ctx.save(); roundRect(ctx,78,ty+8,104,ih-16,8); ctx.clip();
-      const s=Math.max(104/img.width,(ih-16)/img.height);
-      ctx.drawImage(img,78-(img.width*s-104)/2,ty+8-(img.height*s-(ih-16))/2,img.width*s,img.height*s);
+      ctx.shadowColor='rgba(0,0,0,0.14)'; ctx.shadowBlur=18; ctx.shadowOffsetY=4;
+      ctx.save();
+      roundRect(ctx,-sz.w/2,-sz.h/2,sz.w,sz.h,16); ctx.clip();
+      ctx.fillStyle='#EEEEE8'; ctx.fill(); // bg bleed
+      const s=Math.max(sz.w/img.width, sz.h/img.height);
+      ctx.drawImage(img,-sz.w/2-(img.width*s-sz.w)/2,-sz.h/2-(img.height*s-sz.h)/2,img.width*s,img.height*s);
       ctx.restore();
-      ctx.fillStyle='#1A2B1D'; ctx.font='300 17px PingFang SC,sans-serif';
-      wrapText(ctx,(item.text||'').slice(0,30),200,ty+30,W-240,26);
-    } else {
-      ctx.fillStyle='#1A2B1D'; ctx.font='26px sans-serif'; ctx.textAlign='left';
-      ctx.fillText(getModuleIcon(item.module)||'',90,ty+ih/2+6);
-      ctx.fillStyle='#1A2B1D'; ctx.font='300 17px PingFang SC,sans-serif';
-      wrapText(ctx,(item.text||'').slice(0,35),130,ty+30,W-160,26);
-    }
-    ctx.fillStyle='#B8C9BA'; ctx.font='300 14px Lato,sans-serif';
-    ctx.fillText(item.date?.slice(5)||'', item.photo?200:130, ty+ih-18);
-    ty+=perH;
+      ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+
+      ctx.restore();
+    });
+
+    photoY+=(photoItems.length>2?sizes[0].h*1.8:sizes[0].h+40);
+  }
+
+  // ── 文字流 ──
+  const textItems=items.filter(r=>!r.photo&&!r.mood);
+  let textY=photoY+40;
+  if (!photoItems.length) textY=(moodItem?photoY+20:150);
+
+  textItems.forEach((item,i)=>{
+    const prefix=getModuleIcon(item.module);
+    ctx.fillStyle='#8CA590'; ctx.font='14px sans-serif';
+    ctx.fillText(prefix, 48, textY+16);
+
+    ctx.fillStyle='#1A2B1D'; ctx.font='300 17px PingFang SC,sans-serif';
+    const txt=''+item.text;
+    wrapText(ctx, txt, 72, textY+18, W-120, 24);
+    textY+=Math.max(30, txt.length/16*24)+10;
   });
-  ctx.fillStyle='#B8C9BA'; ctx.font='italic 300 18px Lato,serif'; ctx.textAlign='center';
-  ctx.fillText('grow a little every day', W/2, H-30);
+
+  // ── 底部 ──
+  ctx.fillStyle='#B8C9BA'; ctx.font='italic 300 15px Lato,serif'; ctx.textAlign='right';
+  ctx.fillText('⸻ my space', W-48, H-30);
 }
 
-// 情绪卡片 v3：环形图 + 情绪折线
+// ===== 月度回忆 v4 · 有机排版 =====
+function drawCollageV3(canvas, items) {
+  const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
+
+  // 暖白底
+  ctx.fillStyle='#FBFBF8'; ctx.fillRect(0,0,W,H);
+
+  const now=new Date();
+  const mon=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  const monShort=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // ── 全幅照片条 ──
+  const pics=items.filter(r=>r.photo).slice(0,4);
+  const picH=pics.length>0?Math.round(H*0.26):0;
+  if (pics.length>0) {
+    const pw=W/pics.length;
+    pics.forEach((r,i)=>{
+      const img=new Image(); img.src=r.photo;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(Math.floor(i*pw+1),0,Math.ceil(pw-1),picH); ctx.clip();
+      const s=Math.max(pw/img.width, picH/img.height);
+      ctx.drawImage(img,Math.floor(i*pw)-(img.width*s-pw)/2,-(img.height*s-picH)/2,img.width*s,img.height*s);
+      ctx.restore();
+    });
+    // 渐变过渡
+    const g=ctx.createLinearGradient(0,picH-36,0,picH);
+    g.addColorStop(0,'rgba(251,251,248,0)');g.addColorStop(1,'#FBFBF8');
+    ctx.fillStyle=g;ctx.fillRect(0,picH-36,W,36);
+  }
+
+  const ty=picH+(picH>0?20:32);
+
+  // ── 月份 ──
+  ctx.fillStyle='#2A4F2F';ctx.font='300 58px Lato,sans-serif';ctx.textAlign='left';
+  ctx.fillText(mon[now.getMonth()],48,ty+52);
+  ctx.fillStyle='#8CA590';ctx.font='300 18px Lato,serif';
+  ctx.fillText(String(now.getFullYear()),48,ty+76);
+  ctx.fillStyle='#D4E5D6';ctx.fillRect(48,ty+86,W-96,1);
+
+  // ── 幸福感环形图 ──
+  const ringCY=ty+180,ringR=44;
+  drawDonut(ctx,W/2-60,ringCY,ringR,calcHappiness(),'#3D7044');
+
+  // ── 右侧数据文字 ──
+  const sdata=[
+    {l:'MOOD DAYS',v:getCurrentMonthCount('mood')},
+    {l:'INSIGHTS',v:getCurrentMonthCount('learn')},
+    {l:'MEALS',v:getCurrentMonthCount('food')},
+    {l:'TRIPS',v:getCurrentMonthCount('travel')}
+  ];
+  sdata.forEach((n,i)=>{
+    const py=ringCY-32+i*42;
+    ctx.fillStyle='#3D7044';ctx.font='300 28px Lato,sans-serif';ctx.textAlign='left';
+    ctx.fillText(String(n.v),W/2+30,py+18);
+    ctx.fillStyle='#8CA590';ctx.font='400 12px Lato,sans-serif';
+    ctx.fillText(n.l,W/2+68,py+18);
+  });
+
+  // ── 关键词 ──
+  const kw=extractKeywords(getThisMonthAll());
+  const kwY=ringCY+ringR+48;
+  ctx.fillStyle='#2A4F2F';ctx.font='300 24px PingFang SC,serif';ctx.textAlign='center';
+  ctx.fillText(kw.slice(0,4).join(' · '),W/2,kwY);
+
+  // ── 情绪河流（两排圆点）──
+  const moods=getModuleData('mood');
+  const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const rY=kwY+36,rR=13,rG=4;
+  const cols2=Math.ceil(dim/2);
+  const tW=cols2*(rR*2+rG)-rG;
+  const rx=(W-tW)/2;
+  const mc={happy:'#C9DFCC',calm:'#D9E7DC',excited:'#DFEED0',sad:'#EDF0EE',anxious:'#EFEBE4',angry:'#F0E4E4'};
+  for (let d=1;d<=dim;d++){
+    const ds=ym+'-'+String(d).padStart(2,'0');
+    const rec=moods.find(r=>r.date===ds);
+    const col=(d-1)%cols2,row=Math.floor((d-1)/cols2);
+    ctx.beginPath();ctx.arc(rx+col*(rR*2+rG)+rR,rY+row*(rR*2+rG)+rR,rR,0,Math.PI*2);
+    ctx.fillStyle=rec?mc[rec.mood]||'#D9E7DC':'#EEF0ED';ctx.fill();
+  }
+  ctx.fillStyle='#B8C9BA';ctx.font='400 12px Lato,sans-serif';ctx.textAlign='center';
+  ctx.fillText('MOOD RIVER',W/2,rY+2*(rR*2+rG)+18);
+
+  // ── 底部 ──
+  ctx.fillStyle='#B8C9BA';ctx.font='italic 300 15px Lato,serif';ctx.textAlign='right';
+  ctx.fillText('grow a little every day · my space',W-48,H-28);
+}
+
 function drawMoodCardV3(canvas) {
   const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
   const grad=ctx.createLinearGradient(0,0,0,H);
   grad.addColorStop(0,'#EBF3EC'); grad.addColorStop(1,'#FBFBF8');
   ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
-
   ctx.fillStyle='#2A4F2F'; ctx.font='300 42px Lato,sans-serif'; ctx.textAlign='center';
   ctx.fillText('MY MOOD', W/2, 70);
   ctx.fillStyle='#8CA590'; ctx.font='italic 300 20px Lato,serif';
   const now=new Date(); const mon=['January','February','March','April','May','June','July','August','September','October','November','December'];
   ctx.fillText(mon[now.getMonth()]+' '+now.getFullYear(), W/2, 100);
-
-  // 环形图
   const pct=calcHappiness();
   drawDonut(ctx, W/2-80, 210, 55, pct, '#3D7044');
-
-  // 右侧指标
   const moods=getModuleData('mood');
-  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const thisMonthMoods = moods.filter(d=>d.date.startsWith(ym));
+  const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const thisMonthMoods=moods.filter(d=>d.date.startsWith(ym));
   let happy=0, calm=0, sad=0;
-  thisMonthMoods.forEach(d=>{ if(d.mood==='happy'||d.mood==='excited') happy++; else if(d.mood==='calm') calm++; else if(d.mood==='sad'||d.mood==='anxious'||d.mood==='angry') sad++; });
-  const indicators = [
-    {label:'😊 Happy', val:happy, color:'#5A9460'},
-    {label:'😌 Calm',  val:calm,  color:'#8CA590'},
-    {label:'😢 Low',   val:sad,   color:'#B8C9BA'},
-  ];
-  let iy=180;
-  indicators.forEach(ind=>{
+  thisMonthMoods.forEach(d=>{if(d.mood==='happy'||d.mood==='excited')happy++;else if(d.mood==='calm')calm++;else sad++;});
+  [{label:'😊 Happy',val:happy,color:'#5A9460'},{label:'😌 Calm',val:calm,color:'#8CA590'},{label:'😢 Low',val:sad,color:'#B8C9BA'}].forEach((ind,i)=>{
     ctx.fillStyle=ind.color; ctx.font='300 28px Lato,sans-serif'; ctx.textAlign='left';
-    ctx.fillText(String(ind.val), W/2+30, iy+18);
+    ctx.fillText(String(ind.val),W/2+30,180+i*40+18);
     ctx.fillStyle='#8CA590'; ctx.font='300 16px Lato,sans-serif';
-    ctx.fillText(ind.label, W/2+70, iy+18);
-    iy+=40;
+    ctx.fillText(ind.label,W/2+70,180+i*40+18);
   });
-
-  // 折线图
   const lineY=300, lineH=150, lineX0=80, lineX1=W-60;
   ctx.strokeStyle='#D4E5D6'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(lineX0,lineY+lineH); ctx.lineTo(lineX1,lineY+lineH); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(lineX0,lineY); ctx.lineTo(lineX0,lineY+lineH); ctx.stroke();
-
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-  const stepX = (lineX1-lineX0) / Math.max(daysInMonth-1,1);
-  const pts = [];
-  for (let d=1; d<=daysInMonth; d++) {
-    const ds = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const rec = moods.find(r=>r.date===ds);
-    if (rec) {
-      const v = MOOD_TYPES[rec.mood]?.v||3;
-      pts.push({ x:lineX0+(d-1)*stepX, y:lineY+lineH-(v/5)*lineH, v });
-    }
-  }
-
-  if (pts.length>1) {
-    // fill area
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, lineY+lineH);
-    pts.forEach(p=>ctx.lineTo(p.x, p.y));
-    ctx.lineTo(pts[pts.length-1].x, lineY+lineH);
-    ctx.closePath();
-    ctx.fillStyle='rgba(123,174,110,0.12)'; ctx.fill();
-    // line
-    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i=1;i<pts.length;i++) {
-      const xc=(pts[i].x+pts[i-1].x)/2;
-      ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xc, (pts[i].y+pts[i-1].y)/2);
-    }
-    ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
-    ctx.strokeStyle='#5A9460'; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.stroke();
-    // dots
-    pts.forEach(p=>{
-      ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2);
-      ctx.fillStyle='#5A9460'; ctx.fill();
-    });
-  }
-
-  // 情绪图例
-  ctx.fillStyle='#8CA590'; ctx.font='300 14px Lato,sans-serif'; ctx.textAlign='center';
-  ctx.fillText('MOOD CURVE', W/2, lineY+lineH+30);
-  ctx.fillStyle='#8CA590'; ctx.font='300 12px PingFang SC,sans-serif';
-  ctx.fillText('↑ 愉悦度', lineX0, lineY-8);
-  ctx.fillText(`${daysInMonth} days →`, lineX1-40, lineY+lineH+16);
-
-  // 关键词
-  const kw=extractKeywords(thisMonthMoods);
-  ctx.fillStyle='#8CA590'; ctx.font='400 14px Lato,sans-serif';
-  ctx.fillText('KEY WORDS', W/2, 530);
-  ctx.fillStyle='#2A4F2F'; ctx.font='300 20px PingFang SC,sans-serif';
-  ctx.fillText(kw.slice(0,4).join(' · '), W/2, 558);
-
-  ctx.fillStyle='#B8C9BA'; ctx.font='italic 300 18px Lato,serif';
-  ctx.fillText('my space · grow a little every day', W/2, H-30);
-}
-
-function drawPosterV3(canvas) {
-  const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
-  ctx.fillStyle='#FBFBF8'; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#EBF3EC'; ctx.fillRect(0,0,W,300);
-  const now=new Date();
-  const mon=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
-  ctx.fillStyle='#2A4F2F'; ctx.font='300 100px Lato,sans-serif'; ctx.textAlign='center';
-  ctx.fillText(mon[now.getMonth()], W/2, 170);
-  ctx.fillStyle='#8CA590'; ctx.font='300 26px Lato,serif'; ctx.fillText(String(now.getFullYear()), W/2, 210);
-
-  // 环形
-  drawDonut(ctx, W/2-100, 400, 50, calcHappiness(), '#3D7044');
-  // 数字
-  const nums=[{l:'MOOD',v:getCurrentMonthCount('mood')},{l:'LEARN',v:getCurrentMonthCount('learn')},{l:'FOOD',v:getCurrentMonthCount('food')},{l:'TRAVEL',v:getCurrentMonthCount('travel')}];
-  let ny=360;
-  nums.forEach(n=>{
-    ctx.fillStyle='#3D7044'; ctx.font='300 34px Lato,sans-serif'; ctx.textAlign='left';
-    ctx.fillText(String(n.v), W/2+20, ny+20);
-    ctx.fillStyle='#8CA590'; ctx.font='400 13px Lato,sans-serif'; ctx.fillText(n.l, W/2+70, ny+20);
-    ny+=44;
-  });
-
-  // 情绪折线（简化）
-  const moods=getModuleData('mood');
-  const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const lineY=500, lineH=100, lx0=40, lx1=W-40;
-  const daysInM=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  const stepX=(lx1-lx0)/Math.max(daysInM-1,1);
-
-  ctx.strokeStyle='#D4E5D6'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(lx0,lineY+lineH); ctx.lineTo(lx1,lineY+lineH); ctx.stroke();
-
-  ctx.beginPath(); let first=true;
-  for (let d=1; d<=daysInM; d++) {
-    const ds=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const stepX=(lineX1-lineX0)/Math.max(dim-1,1);
+  const pts=[];
+  for(let d=1;d<=dim;d++){
+    const ds=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const rec=moods.find(r=>r.date===ds);
-    if (rec) {
-      const vy=lineY+lineH-(MOOD_TYPES[rec.mood].v/5)*lineH;
-      if (first) { ctx.moveTo(lx0+(d-1)*stepX, vy); first=false; }
-      else ctx.lineTo(lx0+(d-1)*stepX, vy);
-    }
+    if(rec){const v=MOOD_TYPES[rec.mood]?.v||3;pts.push({x:lineX0+(d-1)*stepX,y:lineY+lineH-(v/5)*lineH,v});}
   }
-  ctx.strokeStyle='#5A9460'; ctx.lineWidth=2; ctx.stroke();
-
-  // kw
-  const allRecs=getThisMonthAll();
-  const kw=extractKeywords(allRecs);
-  ctx.fillStyle='#2A4F2F'; ctx.font='300 26px PingFang SC,serif'; ctx.textAlign='center';
-  ctx.fillText(kw.slice(0,4).join(' · '), W/2, 660);
-
-  ctx.fillStyle='#8CA590'; ctx.font='italic 300 20px Lato,serif';
-  ctx.fillText('my space · grow a little every day', W/2, H-40);
+  if(pts.length>1){
+    ctx.beginPath();ctx.moveTo(pts[0].x,lineY+lineH);
+    pts.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x,lineY+lineH);ctx.closePath();
+    ctx.fillStyle='rgba(123,174,110,0.12)';ctx.fill();
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++){const xc=(pts[i].x+pts[i-1].x)/2;ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,xc,(pts[i].y+pts[i-1].y)/2);}
+    ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+    ctx.strokeStyle='#5A9460';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();
+    pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle='#5A9460';ctx.fill();});
+  }
+  ctx.fillStyle='#8CA590';ctx.font='300 14px Lato,sans-serif';ctx.textAlign='center';
+  ctx.fillText('MOOD CURVE',W/2,lineY+lineH+30);
+  const kw=extractKeywords(thisMonthMoods);
+  ctx.fillStyle='#8CA590';ctx.font='400 14px Lato,sans-serif';
+  ctx.fillText('KEY WORDS',W/2,530);
+  ctx.fillStyle='#2A4F2F';ctx.font='300 20px PingFang SC,sans-serif';
+  ctx.fillText(kw.slice(0,4).join(' · '),W/2,558);
+  ctx.fillStyle='#B8C9BA';ctx.font='italic 300 18px Lato,serif';
+  ctx.fillText('my space · grow a little every day',W/2,H-30);
 }
 
 function drawDonut(ctx,cx,cy,r,pct,color) {
-  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle='rgba(180,200,186,0.3)'; ctx.lineWidth=10; ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+(pct/100)*Math.PI*2);
-  ctx.strokeStyle=color; ctx.lineWidth=10; ctx.lineCap='round'; ctx.stroke();
-  ctx.fillStyle=color; ctx.font='300 36px Lato,sans-serif'; ctx.textAlign='center';
-  ctx.fillText(pct+'%', cx, cy+5);
-  ctx.fillStyle='#8CA590'; ctx.font='300 14px PingFang SC,sans-serif';
-  ctx.fillText('幸福指数', cx, cy+28);
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(180,200,186,0.3)';ctx.lineWidth=10;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+(pct/100)*Math.PI*2);
+  ctx.strokeStyle=color;ctx.lineWidth=10;ctx.lineCap='round';ctx.stroke();
+  ctx.fillStyle=color;ctx.font='300 36px Lato,sans-serif';ctx.textAlign='center';
+  ctx.fillText(pct+'%',cx,cy+5);
+  ctx.fillStyle='#8CA590';ctx.font='300 14px PingFang SC,sans-serif';
+  ctx.fillText('幸福指数',cx,cy+28);
 }
 
 // ===== Helpers =====
 function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+// path-only version for clip()
+function roundRectPath(ctx,x,y,w,h,r){
   ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
   ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r);
   ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
@@ -648,4 +756,9 @@ function showToast(msg){
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),250)},1600);
 }
 
-document.addEventListener('DOMContentLoaded', renderHome);
+document.addEventListener('DOMContentLoaded', () => {
+  renderHome();
+  // backup FAB listener
+  const fab = document.getElementById('fabAdd');
+  if (fab) fab.addEventListener('click', openModulePicker);
+});

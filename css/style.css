@@ -790,6 +790,70 @@ body {
 .photo-upload .upload-icon { font-size: 28px; position: relative; z-index: 1; }
 .photo-upload .upload-text { font-size: 12px; color: var(--t3); position: relative; z-index: 1; }
 
+/* =================================================================
+   SHARE V4 · 一键预览
+   ================================================================= */
+.share-content { max-height: 92vh; }
+.share-body { padding: 12px 20px 32px; }
+
+.share-mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
+
+.share-preview-wrap { position: relative; margin-bottom: 14px; }
+.share-preview-wrap img { display: block; }
+
+/* Template strip */
+.template-strip {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding: 0 0 10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.template-strip::-webkit-scrollbar { display: none; }
+
+.ts-chip {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--g2);
+  background: var(--card);
+  font-size: 13px; font-weight: 400;
+  color: var(--t2); cursor: pointer;
+  transition: all .2s ease;
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.ts-chip.selected { border-color: var(--g5); background: var(--g1); color: var(--g6); font-weight: 500; }
+.ts-chip span { font-size: 15px; }
+
+/* Ratio strip */
+.ratio-strip { display: flex; gap: 8px; margin-bottom: 12px; }
+.ratio-chip {
+  flex: 1; padding: 8px 0;
+  border-radius: 20px;
+  border: 1.5px solid var(--g2);
+  background: var(--card);
+  font-size: 13px; font-weight: 400;
+  color: var(--t2); cursor: pointer;
+  transition: all .2s ease;
+  text-align: center;
+}
+.ratio-chip.active { border-color: var(--g5); background: var(--g1); color: var(--g6); font-weight: 500; }
+
+/* Tweak panel */
+.share-tweak { margin-bottom: 14px; }
+.tweak-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--rr);
+  border: 1px solid var(--g2);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 13px; font-weight: 400; color: var(--t2);
+  transition: border-color .15s ease;
+}
+.tweak-header:active { border-color: var(--g4); }
+.tweak-body { padding: 10px 0 0; }
+
 /* Preview modal */
 .preview-content { max-height: 90vh; }
 .preview-image-wrap { text-align: center; }

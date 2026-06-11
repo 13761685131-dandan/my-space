@@ -1,30 +1,22 @@
 # My Space
 
-> 个人成长数字花园 · grow a little every day
+个人成长数字花园 · grow a little every day
 
-A personal growth journal PWA with tropical botanical aesthetics. Record your moods, learning, travel, style, food, and career milestones. Share beautifully designed collages.
+## 功能
 
-## Features
+- 💭 **情绪追踪** — 每天记录心情，日历热力图
+- 📚 **学习志** — 读书、播客、让你有领悟的一切
+- ✈️ **旅行志** · 👗 **穿搭志** · 🍜 **美食志** · 🏆 **职场志**
+- 📸 **照片上传** — 所有模块都支持图片
+- 🖼️ **分享导出** — 日签（随性拼贴）· 拼图 · 情绪卡片 · 月度画报
+- 📱 **PWA** — 添加到主屏幕，离线可用
 
-- 💭 Mood tracking with weather-map calendar
-- 📚 Learning / ✈️ Travel / 👗 Style / 🍜 Food / 🏆 Career journals
-- 📸 Photo upload for visual records
-- 🖼️ Share exports: 4 templates (grid, film, mood card, poster)
-- 📐 Multiple aspect ratios: 3:4, 9:16, 1:1
-- 📱 PWA: install to home screen, works offline
-- 🌿 Botanical aesthetic: Monstera, Lato typography, spring greens
+## 使用
 
-## Tech
-
-- Vanilla HTML / CSS / JS
-- Canvas-based image export engine
-- Service Worker for offline support
-- No frameworks, no build step
-
-## Deploy
-
-Just open `index.html` or serve with any static server:
+打开 `index.html` 或用任意静态服务器：
 
 ```
 python3 -m http.server 8080
 ```
+
+数据全部存储在浏览器 localStorage，不会上传到任何服务器。
