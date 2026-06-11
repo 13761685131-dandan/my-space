@@ -218,7 +218,7 @@
     </div>
   </div>
 
-  <!-- ========== 分享弹窗 v2 ========== -->
+  <!-- ========== 分享弹窗 v3 ========== -->
   <div class="modal-overlay" id="shareModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -227,14 +227,22 @@
       </div>
       <div class="modal-body">
 
-        <!-- Step 1: 选范围 -->
-        <p class="picker-hint">Step 1 · 选择范围</p>
+        <!-- Step 1: 按月 or 按日 -->
+        <p class="picker-hint">Step 1 · 导出方式</p>
         <div class="share-scope">
-          <button class="scope-btn active" data-scope="month" onclick="selectScope('month',this)">本月精选</button>
-          <button class="scope-btn" data-scope="module" onclick="selectScope('module',this)">当前模块</button>
+          <button class="mode-btn active" data-mode="month" onclick="selectMode('month',this)">月度回忆</button>
+          <button class="mode-btn" data-mode="date" onclick="selectMode('date',this)">单日回忆</button>
         </div>
 
-        <!-- Step 2: 选择记录（多选） -->
+        <!-- 月度：选模块 -->
+        <div id="shareModulePicker" style="margin-top:12px;"></div>
+
+        <!-- 单日：选日期 -->
+        <div id="shareDatePicker" style="margin-top:12px;display:none;">
+          <input type="date" id="shareDateInput" class="fg-input" onchange="onDateChange(this.value)" style="width:100%;">
+        </div>
+
+        <!-- Step 2: 选择记录 -->
         <p class="picker-hint" style="margin-top: 16px;">Step 2 · 选择记录 <span style="font-weight:300;color:var(--t4);text-transform:none;font-style:italic;">（多选）</span></p>
         <div class="select-records" id="selectRecords"></div>
 

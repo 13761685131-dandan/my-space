@@ -713,7 +713,16 @@ body {
   color: var(--t2); cursor: pointer;
   transition: all .2s ease;
 }
-.scope-btn.active { border-color: var(--g5); background: var(--g1); color: var(--g6); }
+.scope-btn.active, .mode-btn.active { border-color: var(--g5); background: var(--g1); color: var(--g6); }
+.mode-btn {
+  flex: 1; padding: 10px;
+  border-radius: var(--rr);
+  border: 1px solid var(--g2);
+  background: var(--card);
+  font-family: var(--sans); font-size: 13px; font-weight: 400;
+  color: var(--t2); cursor: pointer;
+  transition: all .2s ease;
+}
 
 .template-grid {
   display: grid;
