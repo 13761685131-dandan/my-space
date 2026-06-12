@@ -370,17 +370,25 @@ function toggleShareModule(k, el) {
 function renderSelectRecords() {
   const el = document.getElementById('selectRecords'); if (!el) return;
   const all = getShareItems();
+  const q = (document.getElementById('tweakSearch')?.value || '').toLowerCase().trim();
+  const filtered = q ? all.filter(item => (item.text||'').toLowerCase().includes(q) || (item.module||'').toLowerCase().includes(q)) : all;
   if (selectedIndices.size === 0) {
-    const n = Math.min(all.length, 9);
+    const n = Math.min(filtered.length, 9);
     for (let i=0;i<n;i++) selectedIndices.add(i);
   }
-  if (all.length===0) { el.innerHTML='<p style="color:var(--t4);font-size:12px;text-align:center;padding:12px;">暂无记录</p>'; return; }
-  el.innerHTML = all.map((item,i)=>{
-    const c=selectedIndices.has(i)?'checked':'';
+  if (filtered.length===0) { el.innerHTML='<p style="color:var(--t4);font-size:12px;text-align:center;padding:12px;">暂无匹配记录</p>'; return; }
+  el.innerHTML = filtered.map((item,i)=>{
+    const origIdx = all.indexOf(item);
+    const c=selectedIndices.has(origIdx)?'checked':'';
     const ph=item.photo?'📷':getModuleIcon(item.module);
-    return '<div class="select-record '+c+'" onclick="toggleRecord('+i+',this)"><div class="sr-check">✓</div><span class="sr-emoji">'+ph+'</span><span class="sr-text">'+(item.text||'').slice(0,25)+'</span><span class="sr-module">'+getModuleTag(item.module)+'</span></div>';
+    return '<div class="select-record '+c+'" onclick="toggleRecord('+origIdx+',this)"><div class="sr-check">✓</div><span class="sr-emoji">'+ph+'</span><span class="sr-text">'+(item.text||'').slice(0,25)+'</span><span class="sr-module">'+getModuleTag(item.module)+'</span></div>';
   }).join('');
   window._shareAll = all;
+}
+
+function filterTweakRecords() {
+  // Keep current selections intact, just re-render the list
+  renderSelectRecords();
 }
 
 async function toggleRecord(idx, el) {
@@ -584,12 +592,12 @@ async function drawScrapbookV3(canvas, items) {
   }
 
   // ── 第二步：精确算总高度 ──
-  let totalH=M+100; // title (bigger font)
-  if (moodItem) totalH+=Math.ceil(moodItem.text.length/16)*44+20;
+  let totalH=M+100;
+  if (moodItem) { const cl=[...moodItem.text].length; totalH+=Math.ceil(cl/16)*44+20; }
   if (photoData.length>0) { photoData.forEach(p=>{totalH+=p.ih+14;}); totalH+=18; }
   else totalH+=10;
-  textItems.forEach(t=>{totalH+=Math.ceil((t.text||'').length/18)*32+8;});
-  totalH+=60; // footer
+  textItems.forEach(t=>{ const cl=[...(t.text||'')].length; totalH+=Math.ceil(cl/22)*32+8; });
+  totalH+=60;
 
   canvas.height=Math.max(totalH+20, 600);
   const H=canvas.height;
@@ -831,15 +839,15 @@ function roundRectPath(ctx,x,y,w,h,r){
 }
 
 function wrapText(ctx,text,x,y,maxW,lineH){
-  const words=text.split(''); let line=''; const lines=[];
-  for(let i=0;i<words.length;i++){const test=line+words[i]; if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=words[i];}else line=test;}
+  const chars=[...text]; let line=''; const lines=[];
+  for(let i=0;i<chars.length;i++){const test=line+chars[i]; if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=chars[i];}else line=test;}
   lines.push(line); lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lineH));
 }
 
 // return lines array (for manual positioning)
 function wrapTextLines(ctx,text,maxW){
-  const words=text.split(''); let line=''; const lines=[];
-  for(let i=0;i<words.length;i++){const test=line+words[i]; if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=words[i];}else line=test;}
+  const chars=[...text]; let line=''; const lines=[];
+  for(let i=0;i<chars.length;i++){const test=line+chars[i]; if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=chars[i];}else line=test;}
   lines.push(line); return lines;
 }
 

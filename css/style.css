@@ -793,13 +793,13 @@ body {
 /* =================================================================
    SHARE V4 · 一键预览
    ================================================================= */
-.share-content { max-height: 92vh; }
-.share-body { padding: 12px 20px 32px; }
+.share-content { max-height: 92vh; overflow-y: auto; }
+.share-body { padding: 12px 20px 32px; overflow: visible; }
 
 .share-mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
 
-.share-preview-wrap { position: relative; margin-bottom: 14px; }
-.share-preview-wrap img { display: block; }
+.share-preview-wrap { position: relative; margin-bottom: 14px; min-height: 60px; }
+.share-preview-wrap img { display: block; width: 100%; height: auto; max-height: none; }
 
 /* Template strip */
 .template-strip {
