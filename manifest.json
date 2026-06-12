@@ -6,8 +6,8 @@
   "scope": "/my-space/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#FBFBF8",
-  "theme_color": "#2A4F2F",
+  "background_color": "#1a1a1e",
+  "theme_color": "#c7aaa8",
   "status_bar": "black-translucent",
   "icons": [
     {

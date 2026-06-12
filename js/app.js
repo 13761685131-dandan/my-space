@@ -223,7 +223,7 @@ function saveRecord() {
 let shareMode = 'month', shareDate = '', shareTemplate = 'grid', shareRatio = '3:4';
 let shareSelectedModules = new Set();
 let selectedIndices = new Set();
-let shareBg = 'warm'; // 底色: warm | cream | mint | charcoal
+let shareBg = 'charcoal'; // 底色: warm | cream | mint | charcoal
 
 function openShareModal(module) {
   currentModule = module; shareMode = 'month'; shareRatio = '3:4';
