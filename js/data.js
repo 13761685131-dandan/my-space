@@ -1,13 +1,24 @@
 /* =================================================================
    My Space · Data Store · localStorage powered
    ================================================================= */
+
+// SVG line-art icons (stroke only, no fill)
+const ICONS = {
+  mood:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/><circle cx="12" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/></svg>`,
+  learn:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  travel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`,
+  outfit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L9 6H4l2 5-2 11h16l-2-11 2-5h-5l-3-4z"/></svg>`,
+  food:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`,
+  career: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`
+};
+
 const MODULES = {
-  mood:   { name:'情绪志', icon:'💭', emoji:'💭' },
-  learn:  { name:'学习志', icon:'📚', emoji:'📚' },
-  travel: { name:'旅行志', icon:'✈️', emoji:'✈️' },
-  outfit: { name:'穿搭志', icon:'👗', emoji:'👗' },
-  food:   { name:'美食志', icon:'🍜', emoji:'🍜' },
-  career: { name:'职场志', icon:'🏆', emoji:'🏆' }
+  mood:   { name:'情绪志', icon: ICONS.mood, emoji:'💭' },
+  learn:  { name:'学习志', icon: ICONS.learn, emoji:'📚' },
+  travel: { name:'旅行志', icon: ICONS.travel, emoji:'✈️' },
+  outfit: { name:'穿搭志', icon: ICONS.outfit, emoji:'👗' },
+  food:   { name:'美食志', icon: ICONS.food, emoji:'🍜' },
+  career: { name:'职场志', icon: ICONS.career, emoji:'🏆' }
 };
 
 const MOOD_TYPES = {

@@ -30,7 +30,6 @@ function renderDate() {
 function renderCuts() {
   const el = document.getElementById('cutsScroll'); if (!el) return;
   const mods = ['mood','learn','travel','outfit','food','career'];
-  const icons = { mood:'💭', learn:'📚', travel:'✈️', outfit:'👗', food:'🍜', career:'🏆' };
   const names = { mood:'情绪', learn:'学习', travel:'旅行', outfit:'穿搭', food:'美食', career:'职场' };
   const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -41,7 +40,7 @@ function renderCuts() {
     const dateStr = latest ? mon[new Date(latest.date).getMonth()] + ' ' + new Date(latest.date).getDate() : '';
     const text = latest ? (latest.text || '').slice(0, 30) : '';
     return `<div class="cut-card ${hasData ? 'has-data' : ''}" onclick="navigateTo('${k}')">
-      <div class="cc-icon">${icons[k]}</div>
+      <div class="cc-icon icon-svg">${MODULES[k].icon}</div>
       ${hasData ? `<div class="cc-text">${text}</div><div style="font-size:11px;color:var(--t3);">${dateStr}</div>` : `<div class="cc-empty">${names[k]}</div>`}
     </div>`;
   }).join('');
@@ -49,10 +48,9 @@ function renderCuts() {
 
 function renderStats() {
   const el = document.getElementById('statsGrid'); if (!el) return;
-  const icons = { mood:'💭', learn:'📚', travel:'✈️', outfit:'👗', food:'🍜', career:'🏆' };
   const names = { mood:'Mood', learn:'Learn', travel:'Travel', outfit:'Style', food:'Food', career:'Career' };
   el.innerHTML = Object.keys(MODULES).map(k =>
-    `<div class="stat-card" onclick="navigateTo('${k}')"><span class="stat-icon">${icons[k]}</span><span class="stat-num">${getCurrentMonthCount(k)}</span><span class="stat-label">${names[k]}</span></div>`
+    `<div class="stat-card" onclick="navigateTo('${k}')"><span class="stat-icon icon-svg">${MODULES[k].icon}</span><span class="stat-num">${getCurrentMonthCount(k)}</span><span class="stat-label">${names[k]}</span></div>`
   ).join('');
 }
 
@@ -79,7 +77,7 @@ function renderExplore() {
   const el = document.getElementById('exploreGrid'); if (!el) return;
   const enNames = { mood:'Mood Journal', learn:'Learning', travel:'Travel', outfit:'Style', food:'Food', career:'Career' };
   el.innerHTML = Object.keys(MODULES).map(k =>
-    `<div class="explore-card" onclick="navigateTo('${k}')"><span class="ec-icon">${MODULES[k].icon}</span><span class="ec-name">${MODULES[k].name}</span><span class="ec-name-en">${enNames[k]}</span><span class="ec-count">${getCurrentMonthCount(k)} this month</span></div>`
+    `<div class="explore-card" onclick="navigateTo('${k}')"><span class="ec-icon icon-svg">${MODULES[k].icon}</span><span class="ec-name">${MODULES[k].name}</span><span class="ec-name-en">${enNames[k]}</span><span class="ec-count">${getCurrentMonthCount(k)} this month</span></div>`
   ).join('');
 }
 
@@ -365,7 +363,7 @@ function renderTweak() {
   if (el && shareMode === 'month') {
     el.innerHTML = Object.keys(MODULES).map(k => {
       const c = shareSelectedModules.has(k) ? 'checked' : '';
-      return '<div class="select-record '+c+'" onclick="toggleShareModule(\''+k+'\',this)"><div class="sr-check">✓</div><span class="sr-emoji">'+MODULES[k].icon+'</span><span class="sr-text">'+MODULES[k].name+'</span><span class="sr-module">'+getCurrentMonthCount(k)+' this month</span></div>';
+      return '<div class="select-record '+c+'" onclick="toggleShareModule(\''+k+'\',this)"><div class="sr-check">✓</div><span class="sr-emoji icon-svg">'+MODULES[k].icon+'</span><span class="sr-text">'+MODULES[k].name+'</span><span class="sr-module">'+getCurrentMonthCount(k)+' this month</span></div>';
     }).join('');
   }
   renderSelectRecords();
@@ -392,8 +390,8 @@ function renderSelectRecords() {
   el.innerHTML = filtered.map((item,i)=>{
     const origIdx = all.indexOf(item);
     const c=selectedIndices.has(origIdx)?'checked':'';
-    const ph=item.photo?'📷':getModuleIcon(item.module);
-    return '<div class="select-record '+c+'" onclick="toggleRecord('+origIdx+',this)"><div class="sr-check">✓</div><span class="sr-emoji">'+ph+'</span><span class="sr-text">'+(item.text||'').slice(0,25)+'</span><span class="sr-module">'+getModuleTag(item.module)+'</span></div>';
+    const ph=item.photo?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>':MODULES[item.module]?.icon||'';
+    return '<div class="select-record '+c+'" onclick="toggleRecord('+origIdx+',this)"><div class="sr-check">✓</div><span class="sr-emoji icon-svg">'+ph+'</span><span class="sr-text">'+(item.text||'').slice(0,25)+'</span><span class="sr-module">'+getModuleTag(item.module)+'</span></div>';
   }).join('');
   window._shareAll = all;
 }
