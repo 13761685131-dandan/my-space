@@ -584,11 +584,11 @@ async function drawScrapbookV3(canvas, items) {
   }
 
   // ── 第二步：精确算总高度 ──
-  let totalH=M+80; // title
-  if (moodItem) totalH+=Math.ceil(moodItem.text.length/20)*40+30;
+  let totalH=M+100; // title (bigger font)
+  if (moodItem) totalH+=Math.ceil(moodItem.text.length/16)*44+20;
   if (photoData.length>0) { photoData.forEach(p=>{totalH+=p.ih+14;}); totalH+=18; }
   else totalH+=10;
-  textItems.forEach(t=>{totalH+=Math.ceil((t.text||'').length/18)*28+16;});
+  textItems.forEach(t=>{totalH+=Math.ceil((t.text||'').length/18)*32+8;});
   totalH+=60; // footer
 
   canvas.height=Math.max(totalH+20, 600);
@@ -598,22 +598,22 @@ async function drawScrapbookV3(canvas, items) {
   ctx.fillStyle=getBgColor(); ctx.fillRect(0,0,W,H);
 
   // 标题
-  ctx.fillStyle=getTextDark(); ctx.font='300 42px Lato,sans-serif';
-  ctx.fillText(mon[d.getMonth()]+' '+d.getDate(),M,68);
-  ctx.fillStyle=getTextMuted(); ctx.font='300 18px Lato,serif';
-  ctx.fillText(week[d.getDay()],M,94);
+  ctx.fillStyle=getTextDark(); ctx.font='300 48px Lato,sans-serif';
+  ctx.fillText(mon[d.getMonth()]+' '+d.getDate(),M,72);
+  ctx.fillStyle=getTextMuted(); ctx.font='300 20px Lato,serif';
+  ctx.fillText(week[d.getDay()],M,100);
   ctx.strokeStyle=getLineColor(); ctx.lineWidth=1.2; ctx.beginPath();
-  ctx.moveTo(M,108); ctx.lineTo(W-M,108); ctx.stroke();
+  ctx.moveTo(M,116); ctx.lineTo(W-M,116); ctx.stroke();
 
-  let y=M+140;
+  let y=M+150;
 
   // 情绪
   if (moodItem) {
     const mi=MOOD_TYPES[moodItem.mood];
-    ctx.fillStyle=getTextDark(); ctx.font='italic 300 28px PingFang SC,serif';
+    ctx.fillStyle=getTextDark(); ctx.font='italic 300 34px PingFang SC,serif';
     const lines=wrapTextLines(ctx,mi.emoji+' '+moodItem.text,W-M*2);
-    lines.forEach(l=>{ctx.fillText(l,M,y);y+=38;});
-    y+=16;
+    lines.forEach(l=>{ctx.fillText(l,M,y);y+=44;});
+    y+=20;
   }
 
   // 照片：全宽一列，用真实高度
@@ -643,12 +643,13 @@ async function drawScrapbookV3(canvas, items) {
   // 文字
   textItems.forEach(item=>{
     const pre=getModuleIcon(item.module);
-    ctx.fillStyle=getTextMuted(); ctx.font='13px sans-serif';
-    ctx.fillText(pre,M,y+16);
-    ctx.fillStyle=getTextDark(); ctx.font='300 17px PingFang SC,sans-serif';
-    const lines=wrapTextLines(ctx,item.text||'',W-M*2-28);
-    lines.forEach(l=>{ctx.fillText(l,M+28,y+17);y+=28;});
-    y+=6;
+    ctx.fillStyle=getTextMuted(); ctx.font='20px sans-serif';
+    ctx.textAlign='left';
+    ctx.fillText(pre, M, y+24);
+    ctx.fillStyle=getTextDark(); ctx.font='300 22px PingFang SC,sans-serif';
+    const lines=wrapTextLines(ctx, item.text||'', W-M*2-44);
+    lines.forEach(l=>{ ctx.fillText(l, M+40, y+24); y+=32; });
+    y+=8;
   });
 
   // 底部
