@@ -29,14 +29,36 @@
     <div id="page-home" class="page active">
 
       <section class="screen screen-hero">
-        <div class="hero-bg"><div class="bg-overlay"></div></div>
+        <div class="hero-bg">
+          <div class="bg-overlay"></div>
+          <!-- SVG Monstera Leaf -->
+          <svg class="monstera-leaf" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+            <path d="M200,480 C200,480 60,400 80,250 C90,180 140,120 200,100 C260,120 310,180 320,250 C340,400 200,480 200,480 Z" fill="none" stroke="rgba(45,65,48,0.15)" stroke-width="1.5"/>
+            <path d="M200,460 C200,460 100,390 115,270 C122,210 160,155 200,140 C240,155 278,210 285,270 C300,390 200,460 200,460 Z" fill="none" stroke="rgba(45,65,48,0.12)" stroke-width="1"/>
+            <!-- Leaf veins -->
+            <line x1="200" y1="140" x2="200" y2="460" stroke="rgba(45,65,48,0.1)" stroke-width="0.8"/>
+            <path d="M200,200 C170,230 140,260 115,270" fill="none" stroke="rgba(45,65,48,0.08)" stroke-width="0.6"/>
+            <path d="M200,200 C230,230 260,260 285,270" fill="none" stroke="rgba(45,65,48,0.08)" stroke-width="0.6"/>
+            <path d="M200,280 C160,300 130,330 115,350" fill="none" stroke="rgba(45,65,48,0.08)" stroke-width="0.6"/>
+            <path d="M200,280 C240,300 270,330 285,350" fill="none" stroke="rgba(45,65,48,0.08)" stroke-width="0.6"/>
+            <!-- Leaf holes (fenestrations) -->
+            <ellipse cx="155" cy="220" rx="20" ry="30" fill="none" stroke="rgba(45,65,48,0.08)" stroke-width="0.8"/>
+            <ellipse cx="245" cy="220" rx="20" ry="30" fill="none" stroke="rgba(45,65,48,0.08)" stroke-width="0.8"/>
+            <ellipse cx="145" cy="310" rx="18" ry="25" fill="none" stroke="rgba(45,65,48,0.08)" stroke-width="0.8"/>
+            <ellipse cx="255" cy="310" rx="18" ry="25" fill="none" stroke="rgba(45,65,48,0.08)" stroke-width="0.8"/>
+          </svg>
+          <!-- Warm light bokeh spots -->
+          <div class="bokeh"></div>
+          <div class="bokeh bokeh-2"></div>
+          <div class="bokeh bokeh-3"></div>
+        </div>
         <div class="hero-content">
           <p class="hero-date" id="headerDate"></p>
-          <h1 class="hero-title">Welcome to<br>My Space</h1>
+          <h1 class="hero-title">My Space</h1>
           <p class="hero-sub">每一天都在生长 <span class="hero-sub-en">&nbsp;—&nbsp;grow a little every day</span></p>
         </div>
         <div class="recent-cuts">
-          <div class="cuts-label">Recent Moments · 最近剪影</div>
+          <div class="cuts-label">Recent · 最近剪影</div>
           <div class="cuts-scroll" id="cutsScroll"></div>
         </div>
       </section>

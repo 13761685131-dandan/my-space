@@ -29,10 +29,22 @@ function renderDate() {
 
 function renderCuts() {
   const el = document.getElementById('cutsScroll'); if (!el) return;
-  const cuts = getRecentCuts();
-  el.innerHTML = cuts.map(c =>
-    `<div class="cut-card" onclick="navigateTo('${c.module}')"><span class="cut-emoji">${c.icon}</span><p class="cut-text">${c.text}</p><p class="cut-tag">${c.tag_en||c.tag}</p><p class="cut-date">${c.date_en||c.date}</p></div>`
-  ).join('');
+  const mods = ['mood','learn','travel','outfit','food','career'];
+  const icons = { mood:'💭', learn:'📚', travel:'✈️', outfit:'👗', food:'🍜', career:'🏆' };
+  const names = { mood:'情绪', learn:'学习', travel:'旅行', outfit:'穿搭', food:'美食', career:'职场' };
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  el.innerHTML = mods.map(k => {
+    const data = getModuleData(k);
+    const latest = data.length > 0 ? data[data.length - 1] : null;
+    const hasData = !!latest;
+    const dateStr = latest ? mon[new Date(latest.date).getMonth()] + ' ' + new Date(latest.date).getDate() : '';
+    const text = latest ? (latest.text || '').slice(0, 30) : '';
+    return `<div class="cut-card ${hasData ? 'has-data' : ''}" onclick="navigateTo('${k}')">
+      <div class="cc-icon">${icons[k]}</div>
+      ${hasData ? `<div class="cc-text">${text}</div><div style="font-size:11px;color:var(--t3);">${dateStr}</div>` : `<div class="cc-empty">${names[k]}</div>`}
+    </div>`;
+  }).join('');
 }
 
 function renderStats() {
