@@ -31,29 +31,82 @@
       <section class="screen screen-hero">
         <div class="hero-bg">
           <div class="bg-overlay"></div>
-          <!-- SVG Monstera Leaf -->
-          <svg class="monstera-leaf" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
-            <path d="M200,480 C200,480 60,400 80,250 C90,180 140,120 200,100 C260,120 310,180 320,250 C340,400 200,480 200,480 Z" fill="none" stroke="rgba(199,170,168,0.15)" stroke-width="1.5"/>
-            <path d="M200,460 C200,460 100,390 115,270 C122,210 160,155 200,140 C240,155 278,210 285,270 C300,390 200,460 200,460 Z" fill="none" stroke="rgba(199,170,168,0.1)" stroke-width="1"/>
-            <line x1="200" y1="140" x2="200" y2="460" stroke="rgba(168,158,166,0.08)" stroke-width="0.8"/>
-            <path d="M200,200 C170,230 140,260 115,270" fill="none" stroke="rgba(168,158,166,0.06)" stroke-width="0.6"/>
-            <path d="M200,200 C230,230 260,260 285,270" fill="none" stroke="rgba(168,158,166,0.06)" stroke-width="0.6"/>
-            <path d="M200,280 C160,300 130,330 115,350" fill="none" stroke="rgba(168,158,166,0.06)" stroke-width="0.6"/>
-            <path d="M200,280 C240,300 270,330 285,350" fill="none" stroke="rgba(168,158,166,0.06)" stroke-width="0.6"/>
-            <ellipse cx="155" cy="220" rx="20" ry="30" fill="none" stroke="rgba(199,170,168,0.06)" stroke-width="0.8"/>
-            <ellipse cx="245" cy="220" rx="20" ry="30" fill="none" stroke="rgba(199,170,168,0.06)" stroke-width="0.8"/>
-            <ellipse cx="145" cy="310" rx="18" ry="25" fill="none" stroke="rgba(199,170,168,0.06)" stroke-width="0.8"/>
-            <ellipse cx="255" cy="310" rx="18" ry="25" fill="none" stroke="rgba(199,170,168,0.06)" stroke-width="0.8"/>
+          <!-- Film grain overlay -->
+          <div class="film-grain"></div>
+          <!-- Vignette -->
+          <div class="vignette"></div>
+          <!-- Atmospheric gradient mesh -->
+          <div class="atmo-glow atmo-1"></div>
+          <div class="atmo-glow atmo-2"></div>
+          <div class="atmo-glow atmo-3"></div>
+
+          <!-- Left plant cluster (background, blurred) -->
+          <svg class="plant-back plant-left" viewBox="0 0 200 600" xmlns="http://www.w3.org/2000/svg">
+            <path d="M80,580 C80,580 30,500 40,350 C45,280 70,220 90,180 C60,250 50,350 60,450 C65,500 75,550 80,580Z" fill="none" stroke="rgba(199,170,168,0.08)" stroke-width="1"/>
+            <path d="M90,580 C90,580 120,480 110,340 C105,270 85,200 70,150 C95,220 105,320 100,430 C97,490 92,540 90,580Z" fill="none" stroke="rgba(168,158,166,0.06)" stroke-width="0.8"/>
+            <path d="M85,580 L85,150" stroke="rgba(199,170,168,0.06)" stroke-width="0.6"/>
+            <path d="M85,250 C60,270 40,300 35,330" fill="none" stroke="rgba(168,158,166,0.05)" stroke-width="0.5"/>
+            <path d="M85,320 C110,340 130,360 140,380" fill="none" stroke="rgba(168,158,166,0.05)" stroke-width="0.5"/>
+            <path d="M85,400 C55,420 35,450 30,480" fill="none" stroke="rgba(168,158,166,0.04)" stroke-width="0.5"/>
           </svg>
-          <!-- Warm light bokeh spots -->
+
+          <!-- Right monstera (foreground, main) -->
+          <svg class="plant-front plant-right" viewBox="0 0 350 500" xmlns="http://www.w3.org/2000/svg">
+            <!-- Main leaf -->
+            <path d="M250,480 C250,480 100,420 120,260 C130,180 170,120 220,90 C270,120 310,180 300,260 C330,400 250,480 250,480Z" fill="none" stroke="rgba(199,170,168,0.12)" stroke-width="1.2"/>
+            <!-- Inner leaf -->
+            <path d="M250,460 C250,460 140,400 155,290 C162,230 190,175 220,155 C250,175 278,230 285,290 C305,380 250,460 250,460Z" fill="none" stroke="rgba(199,170,168,0.08)" stroke-width="0.8"/>
+            <!-- Stem -->
+            <line x1="250" y1="155" x2="250" y2="460" stroke="rgba(168,158,166,0.07)" stroke-width="0.8"/>
+            <!-- Veins -->
+            <path d="M250,200 C220,230 190,260 155,290" fill="none" stroke="rgba(168,158,166,0.05)" stroke-width="0.5"/>
+            <path d="M250,200 C280,230 310,260 320,280" fill="none" stroke="rgba(168,158,166,0.05)" stroke-width="0.5"/>
+            <path d="M250,280 C220,300 190,330 170,360" fill="none" stroke="rgba(168,158,166,0.05)" stroke-width="0.5"/>
+            <path d="M250,280 C280,300 310,330 320,350" fill="none" stroke="rgba(168,158,166,0.05)" stroke-width="0.5"/>
+            <!-- Fenestrations -->
+            <ellipse cx="200" cy="240" rx="18" ry="28" fill="none" stroke="rgba(199,170,168,0.05)" stroke-width="0.7"/>
+            <ellipse cx="290" cy="240" rx="18" ry="28" fill="none" stroke="rgba(199,170,168,0.05)" stroke-width="0.7"/>
+            <ellipse cx="195" cy="330" rx="16" ry="22" fill="none" stroke="rgba(199,170,168,0.04)" stroke-width="0.6"/>
+            <ellipse cx="295" cy="330" rx="16" ry="22" fill="none" stroke="rgba(199,170,168,0.04)" stroke-width="0.6"/>
+            <!-- Second smaller leaf -->
+            <path d="M300,480 C300,480 280,440 290,390 C295,370 310,350 330,340 C350,350 360,370 355,390 C365,430 300,480 300,480Z" fill="none" stroke="rgba(199,170,168,0.06)" stroke-width="0.6"/>
+          </svg>
+
+          <!-- Floating branches (midground) -->
+          <svg class="plant-mid plant-top-left" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,60 C40,55 80,50 120,40 C160,30 200,35 240,30 C270,25 290,30 300,35" fill="none" stroke="rgba(168,158,166,0.07)" stroke-width="0.8"/>
+            <path d="M120,40 C115,60 110,80 105,95" fill="none" stroke="rgba(168,158,166,0.05)" stroke-width="0.5"/>
+            <path d="M180,32 C175,55 172,75 170,90" fill="none" stroke="rgba(168,158,166,0.05)" stroke-width="0.5"/>
+            <!-- Small leaves -->
+            <path d="M105,95 C100,80 85,75 80,90 C85,100 100,105 105,95Z" fill="none" stroke="rgba(199,170,168,0.06)" stroke-width="0.5"/>
+            <path d="M170,90 C165,75 150,72 148,88 C152,98 165,100 170,90Z" fill="none" stroke="rgba(199,170,168,0.06)" stroke-width="0.5"/>
+            <path d="M240,30 C235,18 225,12 220,22 C222,30 232,35 240,30Z" fill="none" stroke="rgba(199,170,168,0.05)" stroke-width="0.4"/>
+          </svg>
+
+          <!-- Bottom fern (very close, slightly blurred) -->
+          <svg class="plant-front plant-bottom" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+            <path d="M200,120 C200,120 195,80 190,50 C188,40 185,30 180,25" fill="none" stroke="rgba(199,170,168,0.06)" stroke-width="0.6"/>
+            <path d="M190,50 C175,55 165,65 160,75" fill="none" stroke="rgba(168,158,166,0.04)" stroke-width="0.4"/>
+            <path d="M195,65 C210,70 220,80 225,88" fill="none" stroke="rgba(168,158,166,0.04)" stroke-width="0.4"/>
+            <path d="M192,45 C180,35 175,25 170,20" fill="none" stroke="rgba(168,158,166,0.04)" stroke-width="0.4"/>
+            <path d="M198,60 C215,50 225,40 235,35" fill="none" stroke="rgba(168,158,166,0.04)" stroke-width="0.4"/>
+            <!-- More fronds -->
+            <path d="M120,120 C120,120 115,90 110,65 C108,55 105,45 100,40" fill="none" stroke="rgba(168,158,166,0.04)" stroke-width="0.5"/>
+            <path d="M110,65 C100,58 90,55 85,60" fill="none" stroke="rgba(168,158,166,0.03)" stroke-width="0.4"/>
+            <path d="M280,120 C280,120 285,85 290,55 C292,45 295,35 300,30" fill="none" stroke="rgba(168,158,166,0.04)" stroke-width="0.5"/>
+            <path d="M290,55 C300,48 310,45 315,50" fill="none" stroke="rgba(168,158,166,0.03)" stroke-width="0.4"/>
+          </svg>
+
+          <!-- Bokeh light spots -->
           <div class="bokeh"></div>
           <div class="bokeh bokeh-2"></div>
           <div class="bokeh bokeh-3"></div>
+          <div class="bokeh bokeh-4"></div>
         </div>
         <div class="hero-content">
           <p class="hero-date" id="headerDate"></p>
           <h1 class="hero-title">My Space</h1>
-          <p class="hero-sub">每一天都在生长 <span class="hero-sub-en">&nbsp;—&nbsp;grow a little every day</span></p>
+          <p class="hero-sub">每一天都在生长 <span class="hero-sub-en">— grow a little every day</span></p>
         </div>
         <div class="recent-cuts">
           <div class="cuts-label">Recent · 最近剪影</div>
